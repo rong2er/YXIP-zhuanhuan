@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Cloudflare 节点优选构建器</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            --primary-hover: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --radius-lg: 16px;
+            --radius-md: 8px;
+            --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --accent-orange: #f59e0b;
+            --success-green: #4ade80;
+        }
+
+        * { box-sizing: border-box; outline: none; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .container {
+            width: 95%; max-width: 1400px; height: 90vh;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        
+        /* 标题样式：删除了之前的 .version-badge 样式 */
+        h1 { 
+            font-size: 1.5rem; margin: 0; font-weight: 800; 
+            background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            display: flex; align-items: center; gap: 10px; 
+        }
+
+        .main-layout { display: grid; grid-template-columns: 450px 1fr; gap: 20px; flex: 1; min-height: 0; }
+
+        .card {
+            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 24px;
+            box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px;
+            overflow: hidden; transition: transform 0.2s;
+        }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .card-title { font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .icon-bg { width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; margin: 0; }
+        
+        .count-badge { font-size: 0.75rem; background: rgba(34, 197, 94, 0.1); color: var(--success-green); padding: 2px 8px; border-radius: 10px; margin-left: 10px; opacity: 0; transition: opacity 0.3s; }
+        .count-badge.show { opacity: 1; }
+
+        .input-group { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+        textarea {
+            width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md); color: #fff; padding: 12px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.85rem;
+            resize: none; flex: 1; transition: all 0.2s;
+        }
+        textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+
+        .settings-grid {
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; 
+            gap: 12px;
+            background: rgba(0,0,0,0.2); padding: 15px; border-radius: var(--radius-md);
+            border: 1px solid var(--glass-border);
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%; background: var(--bg-color); border: 1px solid var(--glass-border);
+            color: white; padding: 10px; border-radius: 6px; font-size: 0.9rem;
+        }
+
+        .btn { border: none; padding: 10px 20px; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary-gradient); color: white; width: 100%; padding: 14px; font-size: 1rem; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5); }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--glass-border); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-ghost { background: transparent; color: var(--text-sub); padding: 4px 8px; font-size: 0.8rem; }
+        .btn-ghost:hover { color: #ef4444; }
+
+        .btn-extract {
+            background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);
+            font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-extract:hover { background: rgba(245, 158, 11, 0.3); color: #fff; }
+
+        .tabs-container { display: flex; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px; gap: 4px; }
+        .tab { flex: 1; text-align: center; padding: 8px; font-size: 0.9rem; color: var(--text-sub); cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .tab.active { background: var(--input-bg); color: #fff; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        #status-toast { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: rgba(34, 197, 94, 0.1); color: #4ade80; opacity: 0; transition: opacity 0.3s; }
+        
+        @media (max-width: 768px) {
+            .container { height: auto; margin: 20px auto; }
+            .main-layout { grid-template-columns: 1fr; height: auto; }
+            textarea { min-height: 150px; }
+            .settings-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🚀 优选构建器</h1>
+        <div id="status-toast">系统就绪</div>
+    </header>
+
+    <div class="main-layout">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title"><div class="icon-bg">⚙️</div> 配置源</div>
+                <button class="btn btn-ghost" onclick="clearInputs()">清空重置</button>
+            </div>
+
+            <div class="input-group" style="flex: 0 0 auto; height: 120px;">
+                <div class="label-row">
+                    <label>1. 原始节点 (模板)</label>
+                </div>
+                <textarea id="sourceNode" placeholder="vless://... 或 vmess://..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <div class="label-row">
+                    <label>2. 粘贴内容 (自动清洗)</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span id="extractCountDisplay" class="count-badge">已提取: 0</span>
+                        <button class="btn-extract" onclick="cleanAndExtract()">⚡ 智能提取</button>
+                    </div>
+                </div>
+                <textarea id="ipList" placeholder="HostMonit / Mrxn / Byoip 等网站内容直接全选复制，粘贴到这里。&#10;&#10;然后点击右上角的黄色按钮清洗。"></textarea>
+            </div>
+
+            <div class="settings-grid">
+                <div>
+                    <label>泛域名(*)替换</label>
+                    <input type="text" id="wildcardPrefix" value="cdn" placeholder="默认: cdn">
+                </div>
+                <div>
+                    <label>默认端口</label>
+                    <input type="number" id="defaultPort" value="443" placeholder="443">
+                </div>
+                <div>
+                    <label>备注后缀</label>
+                    <input type="text" id="tagSuffix" value="-优选" placeholder="例如: -优选">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="generateNodes()">
+                ⚡ 立即生成节点
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="icon-bg">📦</div> 生成结果
+                    <span id="genCountDisplay" class="count-badge" style="background:rgba(59, 130, 246, 0.15); color:#60a5fa;">0 个</span>
+                </div>
+                <div class="btn-group" style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="copyResult()">复制结果</button>
+                    <button class="btn btn-secondary" onclick="downloadResult()">下载</button>
+                </div>
+            </div>
+
+            <div class="tabs-container">
+                <div class="tab active" onclick="switchTab('raw')">链接列表 (Raw)</div>
+                <div class="tab" onclick="switchTab('b64')">Base64 订阅</div>
+                <div class="tab" onclick="switchTab('clash')">Clash Meta</div>
+            </div>
+
+            <textarea id="outputArea" readonly placeholder="点击左侧“立即生成”按钮，结果将在这里显示..."></textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 无痕纯净版 (No Storage / Fixed Bugs) ---
+    
+    let generatedNodes = [];
+    let currentTab = 'raw';
+
+    // 1. 智能清洗与提取
+    function cleanAndExtract() {
+        const raw = document.getElementById('ipList').value;
+        if (!raw.trim()) { showToast("⚠️ 请先粘贴内容", "#f59e0b"); return; }
+
+        const prefix = document.getElementById('wildcardPrefix').value.trim() || 'cdn';
+        const results = new Set();
+
+        const junkKeywords = [
+            'github', 'google', 'microsoft', 'jsdelivr', 'fastly', 'beian', 'w3.org',
+            'copyright', 'license', 'powered', 'hostmonit', 'mrxn.net', 
+            'search', 'favicon', 'assets', 'static', 'dnspod', 'gov.cn', 
+            '127.0.0.1', 'localhost', 'topthink', 'gcore', 'smartcis'
+        ];
+
+        let text = raw.replace(/[\u4e00-\u9fa5\uff00-\uffef]/g, " ").replace(/\t/g, " ");
+
+        // A. 匹配 IPv4
+        const ipv4 = text.match(/(?:^|[^0-9])((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d{1,5})?(?=$|[^0-9])/g) || [];
+        ipv4.forEach(ip => {
+            let clean = ip.replace(/^[^0-9]+/, '');
+            if (clean.startsWith('127.') || clean.startsWith('192.168.')) return;
+            results.add(clean);
+        });
+
+        // B. 匹配 IPv6
+        const ipv6 = text.match(/\[([0-9a-fA-F:]+)\](?::(\d{1,5}))?/g) || [];
+        ipv6.forEach(ip => results.add(ip));
+
+        // C. 匹配 域名
+        const words = text.split(/[\s"';,<>()[\]{}|\\/`=]+/);
+        const regexDomain = /(?:\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?::\d{1,5})?/;
+
+        words.forEach(w => {
+            if(w.includes('.') && !w.startsWith('http') && w.length > 4) {
+                if(w.match(regexDomain)) {
+                    if (junkKeywords.some(k => w.toLowerCase().includes(k))) return;
+                    
+                    const tld = w.split(':')[0].split('.').pop().toLowerCase();
+                    if(['png','jpg','css','js','html','json','xml','ico','svg','txt'].includes(tld)) return;
+
+                    let finalAddr = w;
+                    if(finalAddr.includes('*')) {
+                        finalAddr = finalAddr.replace(/\*\./g, `${prefix}.`).replace(/\*/g, prefix);
+                    }
+                    finalAddr = finalAddr.replace(/[\.\,;]$/, '');
+
+                    results.add(finalAddr);
+                }
+            }
+        });
+
+        const finalArr = Array.from(results);
+        if (finalArr.length === 0) {
+            showToast("❌ 未提取到有效地址", "#f87171");
+            updateExtractCount(0);
+        } else {
+            document.getElementById('ipList').value = finalArr.join('\n');
+            showToast(`✅ 已提取 ${finalArr.length} 个纯净地址`, "#4ade80");
+            updateExtractCount(finalArr.length);
+        }
+    }
+
+    // 更新左侧提取数量
+    function updateExtractCount(count) {
+        const badge = document.getElementById('extractCountDisplay');
+        badge.innerText = `已提取: ${count}`;
+        badge.classList.add('show');
+    }
+
+    // 更新右侧生成数量
+    function updateGenCount(count) {
+        const badge = document.getElementById('genCountDisplay');
+        badge.innerText = `共 ${count} 个节点`;
+        badge.classList.add('show');
+    }
+
+    // 2. 生成节点逻辑
+    function generateNodes() {
+        const sourceText = document.getElementById('sourceNode').value.trim();
+        const ipText = document.getElementById('ipList').value.trim();
+        const userPort = document.getElementById('defaultPort').value.trim() || "443";
+        const suffix = document.getElementById('tagSuffix').value.trim();
+
+        if (!sourceText || !ipText) {
+            showToast("⚠️ 请先输入源节点和IP列表", "#f87171");
+            return;
+        }
+
+        const cleanLines = ipText.split(/[\r\n]+/).filter(l => l.trim().length > 0);
+        const sourceLink = sourceText.split(/[\r\n]+/).filter(x => x.trim())[0];
+        
+        generatedNodes = [];
+        let successCount = 0;
+
+        try {
+            cleanLines.forEach(line => {
+                let addr = line.trim();
+                let port = "";
+
+                if (addr.includes(']:')) { 
+                    const p = addr.split(']:'); addr = p[0] + ']'; port = p[1]; 
+                } else if (addr.includes(':') && !addr.includes(']')) { 
+                    const p = addr.split(':'); addr = p[0]; port = p[1]; 
+                }
+
+                const newNode = createNode(sourceLink, addr, port || userPort, suffix);
+                if (newNode) {
+                    generatedNodes.push(newNode);
+                    successCount++;
+                }
+            });
+
+            updateOutput();
+            updateGenCount(successCount);
+            showToast(`✅ 成功生成 ${successCount} 个节点`, "#4ade80");
+
+        } catch (e) {
+            console.error(e);
+            showToast("❌ 生成出错，请检查格式", "#f87171");
+        }
+    }
+
+    // 3. 节点协议处理
+    function createNode(link, ip, port, suffix) {
+        link = link.trim();
+        let nameExt = suffix ? suffix : `_${ip}`;
+        
+        let srcPort = "443";
+        try {
+             if(link.startsWith("vmess://")) {
+                 const c = JSON.parse(Base64.decode(link.replace("vmess://","")));
+                 srcPort = c.port;
+             } else {
+                 srcPort = new URL(link).port || "443";
+             }
+        } catch(e){}
+
+        const finalPort = port || srcPort;
+        if(finalPort != "443" && finalPort != "80") nameExt += `:${finalPort}`;
+
+        if (link.startsWith("vmess://")) return modifyVMess(link, ip, finalPort, nameExt);
+        else if (link.startsWith("vless://")) return modifyURL(link, "vless", ip, finalPort, nameExt);
+        else if (link.startsWith("trojan://")) return modifyURL(link, "trojan", ip, finalPort, nameExt);
+        else if (link.startsWith("hysteria2://") || link.startsWith("hy2://")) return modifyURL(link, "hysteria2", ip, finalPort, nameExt);
+        else if (link.startsWith("ss://")) return modifySS(link, ip, finalPort, nameExt);
+        return null;
+    }
+
+    function modifyURL(link, protocol, newIP, newPort, nameExt) {
+        try {
+            const urlObj = new URL(link);
+            urlObj.hostname = newIP;
+            urlObj.port = newPort;
+            let rawHash = decodeURIComponent(urlObj.hash.substring(1));
+            urlObj.hash = "#" + encodeURIComponent(rawHash + nameExt);
+            return {
+                type: protocol, link: urlObj.toString(), name: rawHash + nameExt,
+                server: newIP, port: newPort, uuid: urlObj.username, params: Object.fromEntries(urlObj.searchParams)
+            };
+        } catch(e) { return null; }
+    }
+
+    function modifyVMess(link, newIP, newPort, nameExt) {
+        try {
+            const b64 = link.replace("vmess://", "");
+            const jsonStr = Base64.decode(b64);
+            const config = JSON.parse(jsonStr);
+            config.add = newIP;
+            config.port = parseInt(newPort);
+            config.ps = config.ps + nameExt;
+            return {
+                type: "vmess", link: "vmess://" + Base64.encode(JSON.stringify(config)),
+                name: config.ps, server: newIP, port: config.port, uuid: config.id, alterId: config.aid || 0,
+                network: config.net, tls: config.tls, host: config.host || config.sni, path: config.path
+            };
+        } catch(e) { return null; }
+    }
+
+    function modifySS(link, newIP, newPort, nameExt) {
+        try {
+            const urlObj = new URL(link);
+            urlObj.hostname = newIP;
+            urlObj.port = newPort;
+            let rawHash = decodeURIComponent(urlObj.hash.substring(1));
+            urlObj.hash = "#" + encodeURIComponent(rawHash + nameExt);
+            return { type: "ss", link: urlObj.toString(), name: rawHash + nameExt };
+        } catch(e) { return null; }
+    }
+
+    // --- UI 交互 ---
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        updateOutput();
+    }
+
+    function updateOutput() {
+        const area = document.getElementById('outputArea');
+        if (generatedNodes.length === 0) { area.value = ""; return; }
+        if (currentTab === 'raw') area.value = generatedNodes.map(n => n.link).join('\n');
+        else if (currentTab === 'b64') area.value = Base64.encode(generatedNodes.map(n => n.link).join('\n'));
+        else if (currentTab === 'clash') area.value = generateClashYaml(generatedNodes);
+    }
+
+    function generateClashYaml(nodes) {
+        let yaml = "# Copy into 'proxies:' section:\nproxies:\n";
+        nodes.forEach(n => {
+            if (n.type === 'vless') {
+                yaml += `  - name: "${n.name}"\n    type: vless\n    server: ${n.server}\n    port: ${n.port}\n    uuid: ${n.uuid}\n    udp: true\n    tls: true\n    network: ${n.params.type || 'ws'}\n    servername: ${n.params.sni || ''}\n    skip-cert-verify: true\n`;
+                if(n.params.type === 'ws') yaml += `    ws-opts:\n      path: "${n.params.path || '/'}"\n      headers:\n        Host: ${n.params.host || n.params.sni}\n`;
+                yaml += "\n";
+            } else if (n.type === 'vmess') {
+                yaml += `  - name: "${n.name}"\n    type: vmess\n    server: ${n.server}\n    port: ${n.port}\n    uuid: ${n.uuid}\n    alterId: ${n.alterId}\n    cipher: auto\n    tls: ${n.tls === 'tls'}\n    network: ${n.network}\n    skip-cert-verify: true\n`;
+                if(n.network === 'ws') yaml += `    ws-opts:\n      path: "${n.path}"\n      headers:\n        Host: ${n.host}\n`;
+                 yaml += "\n";
+            }
+        });
+        return yaml;
+    }
+
+    const Base64 = {
+        encode: (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1))),
+        decode: (str) => decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))
+    };
+
+    function showToast(msg, color) {
+        const el = document.getElementById('status-toast');
+        el.innerText = msg;
+        el.style.color = color;
+        el.style.opacity = 1;
+        setTimeout(() => el.style.opacity = 0, 3000);
+    }
+
+    function clearInputs() {
+        document.getElementById('sourceNode').value = '';
+        document.getElementById('ipList').value = '';
+        updateExtractCount(0);
+        updateGenCount(0);
+        showToast("已清空数据", "#fff");
+    }
+
+    function copyResult() {
+        const output = document.getElementById('outputArea');
+        output.select();
+        document.execCommand('copy');
+        showToast("📋 已复制到剪贴板", "#4ade80");
+    }
+    
+    function downloadResult() {
+        const blob = new Blob([document.getElementById('outputArea').value], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "nodes_optimized.txt";
+        a.click();
+    }
+</script>
+</body>
+</html>
