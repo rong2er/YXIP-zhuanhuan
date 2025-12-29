@@ -291,7 +291,7 @@
 
 <div class="container">
     <header>
-        <h1>🚀 优选构建器 Pro</h1>
+        <h1>🚀 优选构建器 Pro <span style="font-size:0.5em; opacity:0.7; font-weight:normal;">(Flagpedia版)</span></h1>
         <div id="status-toast">系统就绪</div>
     </header>
 
@@ -339,16 +339,15 @@
                 <div style="margin-bottom:8px;">
                     <select id="ruleSelect" onchange="updateRuleUrl()" style="width:100%; background:var(--input-bg); border:1px solid var(--glass-border); color:#fff; padding:8px; border-radius:var(--radius-md); font-size:0.85rem;">
                         <option value="https://raw.githubusercontent.com/byJoey/test/refs/heads/main/tist.ini">📂 byJoey 自用聚合 (tist.ini)</option>
-                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini" selected>🌐 ACL4SSR 默认版</option>
-                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini">🌍 ACL4SSR 全分组版</option>
-                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Mini.ini">🚀 ACL4SSR 精简版</option>
+                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini">🌐 ACL4SSR 默认版</option>
+                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini" selected>🌍 ACL4SSR 全分组版</option>
                         <option value="custom">📝 自定义规则链接...</option>
                     </select>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <input type="text" id="ruleUrl" placeholder="规则链接地址" 
                         style="flex:1; font-size:0.8rem;" 
-                        value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini">
+                        value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini">
                     <button class="btn btn-convert" onclick="fetchAndApplyRules()" style="min-width:80px;">加载规则</button>
                 </div>
             </div>
@@ -371,36 +370,76 @@ const Base64 = {
 
 const hardcodedGroups = ["节点选择", "手动切换", "自动选择", "电报消息", "OpenAi", "油管视频", "奈飞视频", "巴哈姆特", "哔哩哔哩", "国外媒体", "国内媒体", "谷歌FCM", "微软Bing", "微软云盘", "微软服务", "苹果服务", "游戏平台", "网易音乐", "全球直连", "全球拦截", "应用净化", "漏网之鱼"];
 
-// 1. API 列表：保留 ip-api.com 作为首选
+// --- 核心更新：扩展的国家/地区映射字典 (code -> name) ---
+// --- 核心更新：更全的国家/地区映射字典 (code -> name) ---
+const countryMap = {
+    // 亚洲
+    "CN": "中国", "HK": "香港", "MO": "澳门", "TW": "台湾",
+    "JP": "日本", "KR": "韩国", "SG": "狮城", "IN": "印度",
+    "ID": "印尼", "MY": "马来西亚", "TH": "泰国", "VN": "越南",
+    "PH": "菲律宾", "PK": "巴基斯坦", "IL": "以色列", "TR": "土耳其",
+    "AE": "阿联酋", "SA": "沙特", "IR": "伊朗", "KP": "朝鲜",
+    "CY": "塞浦路斯", // <--- 补上了这个
+
+    // 北美
+    "US": "美国", "CA": "加拿大", "MX": "墨西哥", 
+
+    // 欧洲
+    "GB": "英国", "DE": "德国", "FR": "法国", "NL": "荷兰",
+    "RU": "俄罗斯", "IT": "意大利", "ES": "西班牙", "SE": "瑞典",
+    "CH": "瑞士", "IE": "爱尔兰", "UA": "乌克兰", "PL": "波兰",
+    "NO": "挪威", "FI": "芬兰", "DK": "丹麦", "PT": "葡萄牙",
+    "AT": "奥地利", "GR": "希腊", "BE": "比利时", "HU": "匈牙利",
+    "CZ": "捷克", "RO": "罗马尼亚", "BG": "保加利亚", "IS": "冰岛",
+
+    // 大洋洲
+    "AU": "澳大利亚", "NZ": "新西兰", 
+
+    // 南美
+    "BR": "巴西", "AR": "阿根廷", "CL": "智利", "CO": "哥伦比亚",
+    "PE": "秘鲁",
+
+    // 非洲
+    "ZA": "南非", "EG": "埃及", "NG": "尼日利亚"
+};
+
 const apiProviders = [
     {
-        name: 'ip-api.com', // 主力：中文，准确 (HTTP)
+        name: 'ip-api.com',
         url: (ip) => `http://ip-api.com/json/${ip}?lang=zh-CN`,
         parse: (data) => ({ code: data.countryCode, name: data.country })
     },
     {
-        name: 'ipwho.is', // 备用1
+        name: 'ipwho.is',
         url: (ip) => `https://ipwho.is/${ip}?lang=zh-CN`,
         parse: (data) => ({ code: data.country_code, name: data.country })
     },
     {
-        name: 'ipapi.co', // 备用2
+        name: 'ipapi.co',
         url: (ip) => `https://ipapi.co/${ip}/json/`,
         parse: (data) => ({ code: data.country_code, name: data.country_name })
     }
 ];
 
-function translateCountry(name) {
-    if(!name) return "";
-    const map = { "United States": "美国", "US": "美国", "USA": "美国", "Hong Kong": "香港", "HK": "香港", "Japan": "日本", "JP": "日本", "Singapore": "新加坡", "SG": "狮城", "Taiwan": "台湾", "TW": "台湾", "China": "中国", "CN": "中国", "Korea": "韩国", "KR": "韩国", "United Kingdom": "英国", "UK": "英国", "Germany": "德国", "DE": "德国" };
-    return map[name] || name; 
+function translateCountry(code, name) {
+    if (countryMap[code]) return countryMap[code];
+    // 如果不在字典里，尝试模糊匹配或直接返回API的名称
+    const map = { "United States": "美国", "USA": "美国", "Hong Kong": "香港", "Japan": "日本", "Singapore": "新加坡", "Taiwan": "台湾", "China": "中国", "Korea": "韩国", "United Kingdom": "英国", "Germany": "德国" };
+    return map[name] || name || code; 
 }
 
 function getFlagEmoji(countryCode) {
     if (!countryCode) return '🇺🇸'; 
-    if (countryCode === 'TW') return '🇨🇳'; 
+    if (countryCode === 'TW') return '🇨🇳'; // 某些平台特殊处理，可按需改回 TW
     const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
     return String.fromCodePoint(...codePoints);
+}
+
+// --- 核心更新：Flagpedia 图标获取 ---
+function getFlagIconUrl(countryCode) {
+    if (!countryCode) return null;
+    // Flagpedia 使用 flagcdn.com, 格式为小写代码
+    return `https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`;
 }
 
 function updateRuleUrl() {
@@ -460,16 +499,16 @@ async function fetchIPInfo(ip, preferredIndex) {
                 const data = await res.json();
                 if (data.status === 'fail' && data.message === 'quota reached') throw new Error("Quota reached"); 
                 const info = provider.parse(data);
-                if (info.code) return `${getFlagEmoji(info.code)} ${info.name || info.code}`;
+                // 传递 code 供后续处理
+                if (info.code) return { code: info.code, name: translateCountry(info.code, info.name), rawName: info.name };
             }
         } catch (e) {}
     }
-    return "🇺🇸 美国"; 
+    return { code: 'US', name: '美国', rawName: 'United States' }; 
 }
 
 async function generateNodes() {
     const sourceLink = document.getElementById('sourceNode').value.trim();
-    // 自动去重
     const rawIps = document.getElementById('ipList').value.split('\n').filter(l => l.trim());
     const ips = [...new Set(rawIps)];
     
@@ -489,12 +528,16 @@ async function generateNodes() {
         
         const promises = chunk.map(async (ip, idx) => {
             const globalIndex = i + idx;
-            const areaInfo = await fetchIPInfo(ip, globalIndex);
+            const info = await fetchIPInfo(ip, globalIndex);
+            const flagEmoji = getFlagEmoji(info.code);
             
             const port = document.getElementById('defaultPort').value;
             const suffix = document.getElementById('tagSuffix').value;
-            const nodeName = `${areaInfo}${suffix}-${globalIndex + 1}`;
-            return createNode(sourceLink || "vless://uuid@ip:443#模板", ip, port, nodeName);
+            // 节点名称： 🇺🇸 美国-优选-1
+            const nodeName = `${flagEmoji} ${info.name}${suffix}-${globalIndex + 1}`;
+            
+            // 传入 countryCode 供后续分组使用
+            return createNode(sourceLink || "vless://uuid@ip:443#模板", ip, port, nodeName, info.code, info.name);
         });
 
         const results = await Promise.all(promises);
@@ -570,31 +613,43 @@ async function fetchAndApplyRules() {
     } catch (e) { showToast("❌ 加载失败", "#f87171"); }
 }
 
-function createNode(link, ip, port, nodeName) {
+function createNode(link, ip, port, nodeName, countryCode, countryName) {
+    // 默认值
+    if (!countryCode) countryCode = 'US';
+    if (!countryName) countryName = '美国';
+    
     try {
+        let node = null;
         if (link.startsWith("vmess://")) {
             const config = JSON.parse(Base64.decode(link.replace("vmess://", "")));
             config.add = ip; config.port = parseInt(port); config.ps = nodeName;
-            return { type: "vmess", link: "vmess://" + Base64.encode(JSON.stringify(config)), name: nodeName, server: ip, port: port, secret: config.id, config };
+            node = { type: "vmess", link: "vmess://" + Base64.encode(JSON.stringify(config)), name: nodeName, server: ip, port: port, secret: config.id, config };
         } else {
             const url = new URL(link);
             url.hostname = ip; url.port = port; url.hash = "#" + encodeURIComponent(nodeName);
             const secret = url.username || url.password;
-            return { type: url.protocol.replace(':',''), link: url.toString(), name: nodeName, server: ip, port: port, secret, config: url };
+            node = { type: url.protocol.replace(':',''), link: url.toString(), name: nodeName, server: ip, port: port, secret, config: url };
         }
+        // 附加元数据
+        if(node) {
+            node.meta = { countryCode, countryName };
+        }
+        return node;
     } catch (e) { return null; }
 }
 
 function parseNode(link) {
     try {
+        let node = null;
         if (link.startsWith('vmess://')) {
             const config = JSON.parse(Base64.decode(link.replace('vmess://', '')));
-            return { type: 'vmess', link, name: config.ps, server: config.add, port: config.port, secret: config.id, config };
+            node = { type: 'vmess', link, name: config.ps, server: config.add, port: config.port, secret: config.id, config };
         } else {
             const url = new URL(link);
             const secret = url.username || url.password;
-            return { type: url.protocol.replace(':',''), link, name: decodeURIComponent(url.hash.substring(1)), server: url.hostname, port: url.port, secret, config: url };
+            node = { type: url.protocol.replace(':',''), link, name: decodeURIComponent(url.hash.substring(1)), server: url.hostname, port: url.port, secret, config: url };
         }
+        return node;
     } catch(e) { return null; }
 }
 
@@ -603,7 +658,13 @@ function getIconForGroup(name) {
     const Xiaolin = "https://raw.githubusercontent.com/xiaolin-007/clash/main/icon/";
     const Verge = "https://raw.githubusercontent.com/clash-verge-rev/clash-verge-rev.github.io/main/docs/assets/icons/";
     const Koolson = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/"; 
-    const Homomix = "https://raw.githubusercontent.com/Vbaethon/HOMOMIX/main/Icon/Color/";
+    
+    // 1. 优先检查是否是国家名（动态匹配 Flagpedia）
+    for (const [code, cName] of Object.entries(countryMap)) {
+        if (name.includes(cName) || name.includes(code)) {
+            return getFlagIconUrl(code);
+        }
+    }
 
     const mapping = [
         { key: "OpenAi", icon: Orz3 + "OpenAI.png" },
@@ -639,18 +700,6 @@ function getIconForGroup(name) {
         { key: "全球拦截", icon: Verge + "block.svg" }, 
         { key: "应用净化", icon: Koolson + "Advertising.png" },
         { key: "国内媒体", icon: Koolson + "Media.png" },
-        { key: "Hong Kong", icon: Orz3 + "HK.png" },
-        { key: "香港", icon: Orz3 + "HK.png" },
-        { key: "Japan", icon: Orz3 + "JP.png" },
-        { key: "日本", icon: Orz3 + "JP.png" },
-        { key: "Taiwan", icon: Orz3 + "TW.png" },
-        { key: "台湾", icon: Orz3 + "TW.png" },
-        { key: "United States", icon: Orz3 + "US.png" },
-        { key: "美国", icon: Orz3 + "US.png" },
-        { key: "Singapore", icon: Orz3 + "SG.png" },
-        { key: "狮城", icon: Orz3 + "SG.png" },
-        { key: "Korea", icon: Orz3 + "KR.png" },
-        { key: "韩国", icon: Orz3 + "KR.png" },
         { key: "漏网之鱼", icon: Orz3 + "Final.png" },
         { key: "Match", icon: Orz3 + "Final.png" },
         { key: "Auto", icon: Orz3 + "Urltest.png" },
@@ -675,7 +724,6 @@ function getIconForGroup(name) {
     return Orz3 + "Static.png";
 }
 
-// 🔴 关键修复：仿 Xiaolin 逻辑（默认国外加密 DNS，国内白名单直连）
 function generateClashYaml(nodes) {
     let y = `port: 7890
 socks-port: 7891
@@ -695,25 +743,15 @@ dns:
     - "*.lan"
     - "*.localhost"
   respect-rules: true
-  
-  # 1. 代理节点本身的域名：必须走国内 DNS 快速解析，否则无法连接
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
-  
-  # 2. 默认 DNS (核心防泄露)：任何不在规则内的域名，统统走 Google/CF，
-  # 配合 respect-rules，这会让 Clash 将其视为"国外请求"并交给代理节点解析。
-  # 这样 ISP 就无法看到你访问了什么生僻域名。
   nameserver:
     - https://dns.google/dns-query
     - https://dns.cloudflare.com/dns-query
-  
-  # 3. 默认 DNS 的 Bootstrap IP：为了能解析上面的 dns.google 域名
   default-nameserver: 
     - 223.5.5.5
     - 119.29.29.29
-
-  # 4. 国内分流策略：只有明确是 CN/Private 的，才允许走国内 DNS
   nameserver-policy:
     "geosite:cn,private":
       - https://dns.alidns.com/dns-query
@@ -760,23 +798,52 @@ proxies:
         }
     });
 
+    // --- 动态生成国家分组逻辑 ---
+    // 1. 扫描所有节点，确定有哪些国家
+    const dynamicGroups = {};
     const allNames = nodes.map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n');
-    const hk = nodes.filter(n => /港|HK|Hong Kong/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
-    const jp = nodes.filter(n => /日本|JP|Japan|东京/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
-    const us = nodes.filter(n => /美|US|United States|洛杉矶|硅谷|西雅图/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
-    const sg = nodes.filter(n => /新加坡|坡|狮城|SG|Singapore/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
-    const tw = nodes.filter(n => /台|TW|Taiwan/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
-    const kr = nodes.filter(n => /韩|KR|Korea|首尔/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+
+    nodes.forEach(n => {
+        let matchedName = null;
+        // 优先使用 meta 数据（如果是本工具生成的）
+        if (n.meta && n.meta.countryName) {
+            matchedName = n.meta.countryName;
+        } else {
+            // 回退到字符串匹配（针对粘贴的链接）
+            for (const [code, cName] of Object.entries(countryMap)) {
+                if (n.name.includes(cName) || n.name.includes(code)) {
+                    matchedName = cName;
+                    break;
+                }
+            }
+        }
+
+        if (matchedName) {
+            const groupKey = matchedName + "节点"; // 例如：美国节点
+            if (!dynamicGroups[groupKey]) dynamicGroups[groupKey] = [];
+            dynamicGroups[groupKey].push(`      - "${n.name.replace(/['"]/g, '')}"`);
+        }
+    });
+
+    // 2. 生成各国家分组的字符串
+    let countryGroupYaml = "";
+    let countryGroupNames = []; // 用于添加到 "节点选择" 等主组中
+
+    for (const [groupName, proxies] of Object.entries(dynamicGroups)) {
+        countryGroupNames.push(groupName);
+        countryGroupYaml += `  - name: ${groupName}
+    type: select
+    icon: ${getIconForGroup(groupName)}
+    proxies:
+${proxies.join('\n')}\n`;
+    }
+    
+    // 格式化“节点选择”里要包含的子组
+    const countrySubGroups = countryGroupNames.map(n => `      - ${n}`).join('\n') || '      - DIRECT';
 
     y += `\nrule-providers:\n`;
     activeRules.forEach(rule => {
-        y += `  ${rule.name}:\n`;
-        y += `    type: http\n`;
-        y += `    behavior: ${rule.type || 'classical'}\n`;
-        y += `    format: ${rule.format || 'yaml'}\n`;
-        y += `    url: "${rule.url}"\n`;
-        y += `    path: ./ruleset/${rule.name}.${rule.format === 'text' ? 'list' : 'yaml'}\n`;
-        y += `    interval: 86400\n`;
+        y += `  ${rule.name}:\n    type: http\n    behavior: ${rule.type}\n    format: ${rule.format}\n    url: "${rule.url}"\n    path: ./ruleset/${rule.name}.${rule.format === 'text' ? 'list' : 'yaml'}\n    interval: 86400\n`;
     });
 
     y += `
@@ -786,12 +853,7 @@ proxy-groups:
     icon: ${getIconForGroup("节点选择")}
     proxies:
       - 自动选择
-      - 香港节点
-      - 日本节点
-      - 美国节点
-      - 狮城节点
-      - 台湾节点
-      - 韩国节点
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: 手动切换
@@ -811,24 +873,16 @@ ${allNames}
     icon: ${getIconForGroup("电报消息")}
     proxies:
       - 节点选择
-      - 狮城节点
-      - 香港节点
-      - 台湾节点
-      - 日本节点
-      - 美国节点
-      - 韩国节点
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: OpenAi
     type: select
     icon: ${getIconForGroup("OpenAi")}
     proxies:
-      - 美国节点
       - 节点选择
       - 自动选择
-      - 狮城节点
-      - 香港节点
-      - 日本节点
+${countrySubGroups}
       - 手动切换
   - name: 油管视频
     type: select
@@ -836,10 +890,7 @@ ${allNames}
     proxies:
       - 节点选择
       - 自动选择
-      - 香港节点
-      - 日本节点
-      - 美国节点
-      - 狮城节点
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: 奈飞视频
@@ -847,19 +898,15 @@ ${allNames}
     icon: ${getIconForGroup("奈飞视频")}
     proxies:
       - 节点选择
-      - 香港节点
-      - 日本节点
-      - 美国节点
-      - 狮城节点
-      - 台湾节点
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: 巴哈姆特
     type: select
     icon: ${getIconForGroup("巴哈姆特")}
     proxies:
-      - 台湾节点
       - 节点选择
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: 哔哩哔哩
@@ -867,20 +914,14 @@ ${allNames}
     icon: ${getIconForGroup("哔哩哔哩")}
     proxies:
       - 全球直连
-      - 台湾节点
-      - 香港节点
+${countrySubGroups}
   - name: 国外媒体
     type: select
     icon: ${getIconForGroup("国外媒体")}
     proxies:
       - 节点选择
       - 自动选择
-      - 香港节点
-      - 日本节点
-      - 美国节点
-      - 狮城节点
-      - 台湾节点
-      - 韩国节点
+${countrySubGroups}
       - 手动切换
       - DIRECT
   - name: 国内媒体
@@ -888,9 +929,7 @@ ${allNames}
     icon: ${getIconForGroup("国内媒体")}
     proxies:
       - DIRECT
-      - 香港节点
-      - 台湾节点
-      - 狮城节点
+${countrySubGroups}
       - 手动切换
   - name: 谷歌FCM
     type: select
@@ -898,10 +937,7 @@ ${allNames}
     proxies:
       - DIRECT
       - 节点选择
-      - 美国节点
-      - 香港节点
-      - 日本节点
-      - 狮城节点
+${countrySubGroups}
       - 手动切换
   - name: 微软Bing
     type: select
@@ -909,8 +945,7 @@ ${allNames}
     proxies:
       - DIRECT
       - 节点选择
-      - 美国节点
-      - 香港节点
+${countrySubGroups}
       - 手动切换
   - name: 微软云盘
     type: select
@@ -918,7 +953,7 @@ ${allNames}
     proxies:
       - DIRECT
       - 节点选择
-      - 美国节点
+${countrySubGroups}
       - 手动切换
   - name: 微软服务
     type: select
@@ -933,7 +968,7 @@ ${allNames}
     proxies:
       - DIRECT
       - 节点选择
-      - 美国节点
+${countrySubGroups}
       - 手动切换
   - name: 游戏平台
     type: select
@@ -941,8 +976,7 @@ ${allNames}
     proxies:
       - DIRECT
       - 节点选择
-      - 美国节点
-      - 香港节点
+${countrySubGroups}
       - 手动切换
   - name: 网易音乐
     type: select
@@ -976,44 +1010,12 @@ ${allNames}
       - 节点选择
       - 全球直连
       - 自动选择
-      - 香港节点
-      - 日本节点
-      - 美国节点
-      - 狮城节点
+${countrySubGroups}
       - 手动切换
-  - name: 香港节点
-    type: select
-    icon: ${getIconForGroup("香港节点")}
-    proxies:
-${hk}
-  - name: 日本节点
-    type: select
-    icon: ${getIconForGroup("日本节点")}
-    proxies:
-${jp}
-  - name: 美国节点
-    type: select
-    icon: ${getIconForGroup("美国节点")}
-    proxies:
-${us}
-  - name: 狮城节点
-    type: select
-    icon: ${getIconForGroup("狮城节点")}
-    proxies:
-${sg}
-  - name: 台湾节点
-    type: select
-    icon: ${getIconForGroup("台湾节点")}
-    proxies:
-${tw}
-  - name: 韩国节点
-    type: select
-    icon: ${getIconForGroup("韩国节点")}
-    proxies:
-${kr}
+${countryGroupYaml}
 `;
 
-    // 动态生成其他规则组
+    // 动态生成其他规则组 (非国家类)
     const groupMap = {};
     activeRules.forEach(r => {
         if (!hardcodedGroups.includes(r.group)) {
@@ -1023,13 +1025,13 @@ ${kr}
     });
 
     Object.keys(groupMap).forEach(group => {
-        const cleanName = group.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ''); 
         y += `  - name: "${group}"\n    type: select\n    icon: ${getIconForGroup(group)}\n    proxies:\n      - 节点选择\n      - 手动切换\n      - DIRECT\n`;
     });
 
     y += `\nrules:\n`;
     activeRules.forEach(r => {
         let target = r.group;
+        // 简单映射逻辑...
         if (['Cloudflare', 'LocalAreaNetwork', 'ChinaIP', 'ChinaDomain', 'UnBan'].includes(r.group)) target = 'DIRECT';
         else if (['BanAD', 'BanProgramAD'].includes(r.group)) target = 'REJECT';
         else if (r.group === 'GoogleCN') target = 'Google';
