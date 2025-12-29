@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚡ Cloudflare 节点优选构建器</title>
+    <title>⚡节点优选转换</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -17,14 +17,16 @@
             --radius-lg: 16px;
             --radius-md: 8px;
             --shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            --accent-orange: #f59e0b;
-            --success-green: #4ade80;
         }
 
-        * { box-sizing: border-box; outline: none; }
+        * {
+            box-sizing: border-box;
+            outline: none;
+        }
 
         body {
-            margin: 0; padding: 0;
+            margin: 0;
+            padding: 0;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             background-image: 
@@ -33,90 +35,255 @@
             background-attachment: fixed;
             color: var(--text-main);
             min-height: 100vh;
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .container {
-            width: 95%; max-width: 1400px; height: 90vh;
-            display: flex; flex-direction: column; gap: 20px;
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
         
-        /* 标题样式：删除了之前的 .version-badge 样式 */
         h1 { 
-            font-size: 1.5rem; margin: 0; font-weight: 800; 
-            background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-            display: flex; align-items: center; gap: 10px; 
+            font-size: 1.5rem;
+            margin: 0;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .main-layout { display: grid; grid-template-columns: 450px 1fr; gap: 20px; flex: 1; min-height: 0; }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
 
         .card {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 24px;
-            box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px;
-            overflow: hidden; transition: transform 0.2s;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow: hidden;
         }
 
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .card-title { font-weight: 600; font-size: 1.1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
-        .icon-bg { width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
 
-        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        label { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; margin: 0; }
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-bg {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: 500;
+            margin: 0;
+        }
         
-        .count-badge { font-size: 0.75rem; background: rgba(34, 197, 94, 0.1); color: var(--success-green); padding: 2px 8px; border-radius: 10px; margin-left: 10px; opacity: 0; transition: opacity 0.3s; }
-        .count-badge.show { opacity: 1; }
-
-        .input-group { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .count-badge {
+            font-size: 0.75rem;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
 
         textarea {
-            width: 100%; background: var(--input-bg); border: 1px solid var(--glass-border);
-            border-radius: var(--radius-md); color: #fff; padding: 12px;
-            font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.85rem;
-            resize: none; flex: 1; transition: all 0.2s;
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            color: #fff;
+            padding: 12px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.85rem;
+            resize: none;
+            flex: 1;
+            transition: all 0.2s;
         }
-        textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
+
+        textarea:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
 
         .settings-grid {
-            display: grid; 
-            grid-template-columns: 1fr 1fr 1fr; 
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
-            background: rgba(0,0,0,0.2); padding: 15px; border-radius: var(--radius-md);
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: var(--radius-md);
             border: 1px solid var(--glass-border);
         }
 
-        input[type="text"], input[type="number"] {
-            width: 100%; background: var(--bg-color); border: 1px solid var(--glass-border);
-            color: white; padding: 10px; border-radius: 6px; font-size: 0.9rem;
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            background: var(--bg-color);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        select option {
+            background-color: #1e293b;
         }
 
-        .btn { border: none; padding: 10px 20px; border-radius: var(--radius-md); cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary { background: var(--primary-gradient); color: white; width: 100%; padding: 14px; font-size: 1rem; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5); }
-        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--glass-border); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-        .btn-ghost { background: transparent; color: var(--text-sub); padding: 4px 8px; font-size: 0.8rem; }
-        .btn-ghost:hover { color: #ef4444; }
+        .btn {
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+            width: 100%;
+            padding: 14px;
+            font-size: 1rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .btn-convert { 
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8; 
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            font-size: 0.85rem;
+            min-width: 100px;
+        }
+
+        .btn-convert:hover {
+            background: rgba(99, 102, 241, 0.4);
+            color: #fff;
+        }
 
         .btn-extract {
-            background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);
-            font-size: 0.75rem; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: 0.2s;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24; 
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
         }
-        .btn-extract:hover { background: rgba(245, 158, 11, 0.3); color: #fff; }
 
-        .tabs-container { display: flex; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px; gap: 4px; }
-        .tab { flex: 1; text-align: center; padding: 8px; font-size: 0.9rem; color: var(--text-sub); cursor: pointer; border-radius: 6px; transition: 0.2s; }
-        .tab.active { background: var(--input-bg); color: #fff; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-extract:hover {
+            background: rgba(245, 158, 11, 0.3);
+            color: #fff;
+        }
 
-        #status-toast { font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background: rgba(34, 197, 94, 0.1); color: #4ade80; opacity: 0; transition: opacity 0.3s; }
+        .tabs-container {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 8px;
+            gap: 4px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            background: var(--input-bg);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        #status-toast {
+            font-size: 0.85rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
         
         @media (max-width: 768px) {
-            .container { height: auto; margin: 20px auto; }
-            .main-layout { grid-template-columns: 1fr; height: auto; }
+            .main-layout { grid-template-columns: 1fr; }
             textarea { min-height: 150px; }
-            .settings-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -124,341 +291,785 @@
 
 <div class="container">
     <header>
-        <h1>🚀 优选构建器</h1>
+        <h1>🚀 优选构建器 Pro</h1>
         <div id="status-toast">系统就绪</div>
     </header>
 
     <div class="main-layout">
         <div class="card">
             <div class="card-header">
-                <div class="card-title"><div class="icon-bg">⚙️</div> 配置源</div>
-                <button class="btn btn-ghost" onclick="clearInputs()">清空重置</button>
+                <div class="card-title"><div class="icon-bg">⚙️</div> 原始节点</div>
+                <button class="btn btn-secondary" onclick="location.reload()">重置</button>
             </div>
 
-            <div class="input-group" style="flex: 0 0 auto; height: 120px;">
-                <div class="label-row">
-                    <label>1. 原始节点 (模板)</label>
-                </div>
-                <textarea id="sourceNode" placeholder="vless://... 或 vmess://..."></textarea>
-            </div>
+            <textarea id="sourceNode" style="height: 100px; flex: none;" placeholder="粘贴模板链接 (用于批量生成)"></textarea>
 
-            <div class="input-group">
-                <div class="label-row">
-                    <label>2. 粘贴内容 (自动清洗)</label>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span id="extractCountDisplay" class="count-badge">已提取: 0</span>
-                        <button class="btn-extract" onclick="cleanAndExtract()">⚡ 智能提取</button>
-                    </div>
-                </div>
-                <textarea id="ipList" placeholder="HostMonit / Mrxn / Byoip 等网站内容直接全选复制，粘贴到这里。&#10;&#10;然后点击右上角的黄色按钮清洗。"></textarea>
+            <div class="card-header">
+                <label>IP 列表</label>
+                <button class="btn-extract" onclick="cleanAndExtract()">⚡ 提取 IP</button>
             </div>
+            <textarea id="ipList" placeholder="粘贴 IP 列表..."></textarea>
 
             <div class="settings-grid">
-                <div>
-                    <label>泛域名(*)替换</label>
-                    <input type="text" id="wildcardPrefix" value="cdn" placeholder="默认: cdn">
-                </div>
-                <div>
-                    <label>默认端口</label>
-                    <input type="number" id="defaultPort" value="443" placeholder="443">
-                </div>
-                <div>
-                    <label>备注后缀</label>
-                    <input type="text" id="tagSuffix" value="-优选" placeholder="例如: -优选">
-                </div>
+                <div><label style="font-size:0.7rem;">泛域名</label><input type="text" id="wildcardPrefix" value="cdn"></div>
+                <div><label style="font-size:0.7rem;">默认端口</label><input type="number" id="defaultPort" value="443"></div>
+                <div><label style="font-size:0.7rem;">后缀</label><input type="text" id="tagSuffix" value="-优选"></div>
             </div>
 
-            <button class="btn btn-primary" onclick="generateNodes()">
-                ⚡ 立即生成节点
-            </button>
+            <button class="btn btn-primary" id="genBtn" onclick="generateNodes()">⚡ 开始转换 (自动去重)</button>
         </div>
 
         <div class="card">
             <div class="card-header">
-                <div class="card-title">
-                    <div class="icon-bg">📦</div> 生成结果
-                    <span id="genCountDisplay" class="count-badge" style="background:rgba(59, 130, 246, 0.15); color:#60a5fa;">0 个</span>
-                </div>
-                <div class="btn-group" style="display:flex; gap:10px;">
-                    <button class="btn btn-secondary" onclick="copyResult()">复制结果</button>
+                <div class="card-title">📦 结果输出</div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-convert" onclick="independentTransform()">⚡ 格式转换</button>
+                    <button class="btn btn-secondary" onclick="copyResult()">复制</button>
                     <button class="btn btn-secondary" onclick="downloadResult()">下载</button>
                 </div>
             </div>
 
             <div class="tabs-container">
-                <div class="tab active" onclick="switchTab('raw')">链接列表 (Raw)</div>
-                <div class="tab" onclick="switchTab('b64')">Base64 订阅</div>
-                <div class="tab" onclick="switchTab('clash')">Clash Meta</div>
+                <div class="tab active" onclick="switchTab('raw')">链接列表</div>
+                <div class="tab" onclick="switchTab('b64')">Base64</div>
+                <div class="tab" onclick="switchTab('clash')">Clash YAML</div>
             </div>
 
-            <textarea id="outputArea" readonly placeholder="点击左侧“立即生成”按钮，结果将在这里显示..."></textarea>
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; margin-bottom:10px;" id="ruleUrlBox">
+                <div style="margin-bottom:8px;">
+                    <select id="ruleSelect" onchange="updateRuleUrl()" style="width:100%; background:var(--input-bg); border:1px solid var(--glass-border); color:#fff; padding:8px; border-radius:var(--radius-md); font-size:0.85rem;">
+                        <option value="https://raw.githubusercontent.com/byJoey/test/refs/heads/main/tist.ini">📂 byJoey 自用聚合 (tist.ini)</option>
+                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini" selected>🌐 ACL4SSR 默认版</option>
+                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini">🌍 ACL4SSR 全分组版</option>
+                        <option value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Mini.ini">🚀 ACL4SSR 精简版</option>
+                        <option value="custom">📝 自定义规则链接...</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="text" id="ruleUrl" placeholder="规则链接地址" 
+                        style="flex:1; font-size:0.8rem;" 
+                        value="https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini">
+                    <button class="btn btn-convert" onclick="fetchAndApplyRules()" style="min-width:80px;">加载规则</button>
+                </div>
+            </div>
+
+            <textarea id="outputArea" placeholder="直接粘贴链接或 YAML 点击“格式转换”..."></textarea>
+            
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-sub);">
+                <span>状态: <span id="progress-text">闲置</span></span>
+                <span id="genCountDisplay" class="count-badge">0 个节点</span>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- 无痕纯净版 (No Storage / Fixed Bugs) ---
-    
-    let generatedNodes = [];
-    let currentTab = 'raw';
+const Base64 = {
+    encode: (s) => btoa(unescape(encodeURIComponent(s))),
+    decode: (s) => decodeURIComponent(escape(atob(s)))
+};
 
-    // 1. 智能清洗与提取
-    function cleanAndExtract() {
-        const raw = document.getElementById('ipList').value;
-        if (!raw.trim()) { showToast("⚠️ 请先粘贴内容", "#f59e0b"); return; }
+const hardcodedGroups = ["节点选择", "手动切换", "自动选择", "电报消息", "OpenAi", "油管视频", "奈飞视频", "巴哈姆特", "哔哩哔哩", "国外媒体", "国内媒体", "谷歌FCM", "微软Bing", "微软云盘", "微软服务", "苹果服务", "游戏平台", "网易音乐", "全球直连", "全球拦截", "应用净化", "漏网之鱼"];
 
-        const prefix = document.getElementById('wildcardPrefix').value.trim() || 'cdn';
-        const results = new Set();
+// 1. API 列表：保留 ip-api.com 作为首选
+const apiProviders = [
+    {
+        name: 'ip-api.com', // 主力：中文，准确 (HTTP)
+        url: (ip) => `http://ip-api.com/json/${ip}?lang=zh-CN`,
+        parse: (data) => ({ code: data.countryCode, name: data.country })
+    },
+    {
+        name: 'ipwho.is', // 备用1
+        url: (ip) => `https://ipwho.is/${ip}?lang=zh-CN`,
+        parse: (data) => ({ code: data.country_code, name: data.country })
+    },
+    {
+        name: 'ipapi.co', // 备用2
+        url: (ip) => `https://ipapi.co/${ip}/json/`,
+        parse: (data) => ({ code: data.country_code, name: data.country_name })
+    }
+];
 
-        const junkKeywords = [
-            'github', 'google', 'microsoft', 'jsdelivr', 'fastly', 'beian', 'w3.org',
-            'copyright', 'license', 'powered', 'hostmonit', 'mrxn.net', 
-            'search', 'favicon', 'assets', 'static', 'dnspod', 'gov.cn', 
-            '127.0.0.1', 'localhost', 'topthink', 'gcore', 'smartcis'
-        ];
+function translateCountry(name) {
+    if(!name) return "";
+    const map = { "United States": "美国", "US": "美国", "USA": "美国", "Hong Kong": "香港", "HK": "香港", "Japan": "日本", "JP": "日本", "Singapore": "新加坡", "SG": "狮城", "Taiwan": "台湾", "TW": "台湾", "China": "中国", "CN": "中国", "Korea": "韩国", "KR": "韩国", "United Kingdom": "英国", "UK": "英国", "Germany": "德国", "DE": "德国" };
+    return map[name] || name; 
+}
 
-        let text = raw.replace(/[\u4e00-\u9fa5\uff00-\uffef]/g, " ").replace(/\t/g, " ");
+function getFlagEmoji(countryCode) {
+    if (!countryCode) return '🇺🇸'; 
+    if (countryCode === 'TW') return '🇨🇳'; 
+    const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+    return String.fromCodePoint(...codePoints);
+}
 
-        // A. 匹配 IPv4
-        const ipv4 = text.match(/(?:^|[^0-9])((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(?::\d{1,5})?(?=$|[^0-9])/g) || [];
-        ipv4.forEach(ip => {
-            let clean = ip.replace(/^[^0-9]+/, '');
-            if (clean.startsWith('127.') || clean.startsWith('192.168.')) return;
-            results.add(clean);
-        });
+function updateRuleUrl() {
+    const select = document.getElementById('ruleSelect');
+    const input = document.getElementById('ruleUrl');
+    if (select.value !== 'custom') { input.value = select.value; } 
+    else { input.value = ''; input.placeholder = '请在此粘贴自定义规则链接...'; input.focus(); }
+}
 
-        // B. 匹配 IPv6
-        const ipv6 = text.match(/\[([0-9a-fA-F:]+)\](?::(\d{1,5}))?/g) || [];
-        ipv6.forEach(ip => results.add(ip));
+let activeRules = [
+    { name: "Lan", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list", type: "classical", format: "text" },
+    { name: "UnBan", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/UnBan.list", type: "classical", format: "text" },
+    { name: "Advertising", group: "应用净化", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list", type: "classical", format: "text" },
+    { name: "Privacy", group: "应用净化", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list", type: "classical", format: "text" },
+    { name: "GoogleFCM", group: "谷歌FCM", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list", type: "classical", format: "text" },
+    { name: "Google", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Google.list", type: "classical", format: "text" },
+    { name: "Bing", group: "微软Bing", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bing.list", type: "classical", format: "text" },
+    { name: "OneDrive", group: "微软云盘", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OneDrive.list", type: "classical", format: "text" },
+    { name: "Microsoft", group: "微软服务", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Microsoft.list", type: "classical", format: "text" },
+    { name: "Apple", group: "苹果服务", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list", type: "classical", format: "text" },
+    { name: "Telegram", group: "电报消息", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Telegram.list", type: "classical", format: "text" },
+    { name: "OpenAI", group: "OpenAi", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list", type: "classical", format: "text" },
+    { name: "AI_Global", group: "OpenAi", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list", type: "classical", format: "text" },
+    { name: "Steam", group: "游戏平台", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Steam.list", type: "classical", format: "text" },
+    { name: "Bilibili", group: "哔哩哔哩", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bilibili.list", type: "classical", format: "text" },
+    { name: "Bahamut", group: "巴哈姆特", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bahamut.list", type: "classical", format: "text" },
+    { name: "NeteaseMusic", group: "网易音乐", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/NetEaseMusic.list", type: "classical", format: "text" },
+    { name: "YouTube", group: "油管视频", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list", type: "classical", format: "text" },
+    { name: "Netflix", group: "奈飞视频", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Netflix.list", type: "classical", format: "text" },
+    { name: "ProxyMedia", group: "国外媒体", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list", type: "classical", format: "text" },
+    { name: "ProxyGFWlist", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list", type: "classical", format: "text" },
+    { name: "ProxyLite", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyLite.list", type: "classical", format: "text" },
+    { name: "ChinaMedia", group: "国内媒体", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list", type: "classical", format: "text" },
+    { name: "ChinaDomain", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list", type: "classical", format: "text" },
+    { name: "ChinaCompanyIp", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list", type: "classical", format: "text" },
+    { name: "ChinaIp", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaIp.list", type: "classical", format: "text" }
+];
 
-        // C. 匹配 域名
-        const words = text.split(/[\s"';,<>()[\]{}|\\/`=]+/);
-        const regexDomain = /(?:\*\.)?([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(?::\d{1,5})?/;
+let generatedNodes = [];
+let currentTab = 'raw';
 
-        words.forEach(w => {
-            if(w.includes('.') && !w.startsWith('http') && w.length > 4) {
-                if(w.match(regexDomain)) {
-                    if (junkKeywords.some(k => w.toLowerCase().includes(k))) return;
-                    
-                    const tld = w.split(':')[0].split('.').pop().toLowerCase();
-                    if(['png','jpg','css','js','html','json','xml','ico','svg','txt'].includes(tld)) return;
+async function fetchIPInfo(ip, preferredIndex) {
+    const totalProviders = apiProviders.length;
+    let startIndex = 0;
+    if (location.protocol === 'https:' && apiProviders[0].name === 'ip-api.com') startIndex = 1;
 
-                    let finalAddr = w;
-                    if(finalAddr.includes('*')) {
-                        finalAddr = finalAddr.replace(/\*\./g, `${prefix}.`).replace(/\*/g, prefix);
-                    }
-                    finalAddr = finalAddr.replace(/[\.\,;]$/, '');
-
-                    results.add(finalAddr);
-                }
+    for (let i = startIndex; i < totalProviders; i++) {
+        let currentIndex = (preferredIndex + i) % totalProviders;
+        if (location.protocol === 'https:' && currentIndex === 0) currentIndex = 1;
+        const provider = apiProviders[currentIndex];
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500); 
+            const res = await fetch(provider.url(ip), { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.status === 'fail' && data.message === 'quota reached') throw new Error("Quota reached"); 
+                const info = provider.parse(data);
+                if (info.code) return `${getFlagEmoji(info.code)} ${info.name || info.code}`;
             }
+        } catch (e) {}
+    }
+    return "🇺🇸 美国"; 
+}
+
+async function generateNodes() {
+    const sourceLink = document.getElementById('sourceNode').value.trim();
+    // 自动去重
+    const rawIps = document.getElementById('ipList').value.split('\n').filter(l => l.trim());
+    const ips = [...new Set(rawIps)];
+    
+    if (ips.length === 0) return showToast("⚠️ 请输入IP列表", "#f87171");
+    
+    const btn = document.getElementById('genBtn');
+    const progress = document.getElementById('progress-text');
+    btn.disabled = true;
+    generatedNodes = [];
+
+    const BATCH_SIZE = 8; 
+    showToast(`🚀 开始处理 ${ips.length} 个唯一IP...`, "#60a5fa");
+
+    for (let i = 0; i < ips.length; i += BATCH_SIZE) {
+        const chunk = ips.slice(i, i + BATCH_SIZE);
+        progress.innerText = `处理中: ${i + 1} / ${ips.length}`;
+        
+        const promises = chunk.map(async (ip, idx) => {
+            const globalIndex = i + idx;
+            const areaInfo = await fetchIPInfo(ip, globalIndex);
+            
+            const port = document.getElementById('defaultPort').value;
+            const suffix = document.getElementById('tagSuffix').value;
+            const nodeName = `${areaInfo}${suffix}-${globalIndex + 1}`;
+            return createNode(sourceLink || "vless://uuid@ip:443#模板", ip, port, nodeName);
         });
 
-        const finalArr = Array.from(results);
-        if (finalArr.length === 0) {
-            showToast("❌ 未提取到有效地址", "#f87171");
-            updateExtractCount(0);
-        } else {
-            document.getElementById('ipList').value = finalArr.join('\n');
-            showToast(`✅ 已提取 ${finalArr.length} 个纯净地址`, "#4ade80");
-            updateExtractCount(finalArr.length);
-        }
-    }
-
-    // 更新左侧提取数量
-    function updateExtractCount(count) {
-        const badge = document.getElementById('extractCountDisplay');
-        badge.innerText = `已提取: ${count}`;
-        badge.classList.add('show');
-    }
-
-    // 更新右侧生成数量
-    function updateGenCount(count) {
-        const badge = document.getElementById('genCountDisplay');
-        badge.innerText = `共 ${count} 个节点`;
-        badge.classList.add('show');
-    }
-
-    // 2. 生成节点逻辑
-    function generateNodes() {
-        const sourceText = document.getElementById('sourceNode').value.trim();
-        const ipText = document.getElementById('ipList').value.trim();
-        const userPort = document.getElementById('defaultPort').value.trim() || "443";
-        const suffix = document.getElementById('tagSuffix').value.trim();
-
-        if (!sourceText || !ipText) {
-            showToast("⚠️ 请先输入源节点和IP列表", "#f87171");
-            return;
-        }
-
-        const cleanLines = ipText.split(/[\r\n]+/).filter(l => l.trim().length > 0);
-        const sourceLink = sourceText.split(/[\r\n]+/).filter(x => x.trim())[0];
+        const results = await Promise.all(promises);
+        results.forEach(node => { if (node) generatedNodes.push(node); });
         
-        generatedNodes = [];
-        let successCount = 0;
-
-        try {
-            cleanLines.forEach(line => {
-                let addr = line.trim();
-                let port = "";
-
-                if (addr.includes(']:')) { 
-                    const p = addr.split(']:'); addr = p[0] + ']'; port = p[1]; 
-                } else if (addr.includes(':') && !addr.includes(']')) { 
-                    const p = addr.split(':'); addr = p[0]; port = p[1]; 
-                }
-
-                const newNode = createNode(sourceLink, addr, port || userPort, suffix);
-                if (newNode) {
-                    generatedNodes.push(newNode);
-                    successCount++;
-                }
-            });
-
-            updateOutput();
-            updateGenCount(successCount);
-            showToast(`✅ 成功生成 ${successCount} 个节点`, "#4ade80");
-
-        } catch (e) {
-            console.error(e);
-            showToast("❌ 生成出错，请检查格式", "#f87171");
-        }
-    }
-
-    // 3. 节点协议处理
-    function createNode(link, ip, port, suffix) {
-        link = link.trim();
-        let nameExt = suffix ? suffix : `_${ip}`;
-        
-        let srcPort = "443";
-        try {
-             if(link.startsWith("vmess://")) {
-                 const c = JSON.parse(Base64.decode(link.replace("vmess://","")));
-                 srcPort = c.port;
-             } else {
-                 srcPort = new URL(link).port || "443";
-             }
-        } catch(e){}
-
-        const finalPort = port || srcPort;
-        if(finalPort != "443" && finalPort != "80") nameExt += `:${finalPort}`;
-
-        if (link.startsWith("vmess://")) return modifyVMess(link, ip, finalPort, nameExt);
-        else if (link.startsWith("vless://")) return modifyURL(link, "vless", ip, finalPort, nameExt);
-        else if (link.startsWith("trojan://")) return modifyURL(link, "trojan", ip, finalPort, nameExt);
-        else if (link.startsWith("hysteria2://") || link.startsWith("hy2://")) return modifyURL(link, "hysteria2", ip, finalPort, nameExt);
-        else if (link.startsWith("ss://")) return modifySS(link, ip, finalPort, nameExt);
-        return null;
-    }
-
-    function modifyURL(link, protocol, newIP, newPort, nameExt) {
-        try {
-            const urlObj = new URL(link);
-            urlObj.hostname = newIP;
-            urlObj.port = newPort;
-            let rawHash = decodeURIComponent(urlObj.hash.substring(1));
-            urlObj.hash = "#" + encodeURIComponent(rawHash + nameExt);
-            return {
-                type: protocol, link: urlObj.toString(), name: rawHash + nameExt,
-                server: newIP, port: newPort, uuid: urlObj.username, params: Object.fromEntries(urlObj.searchParams)
-            };
-        } catch(e) { return null; }
-    }
-
-    function modifyVMess(link, newIP, newPort, nameExt) {
-        try {
-            const b64 = link.replace("vmess://", "");
-            const jsonStr = Base64.decode(b64);
-            const config = JSON.parse(jsonStr);
-            config.add = newIP;
-            config.port = parseInt(newPort);
-            config.ps = config.ps + nameExt;
-            return {
-                type: "vmess", link: "vmess://" + Base64.encode(JSON.stringify(config)),
-                name: config.ps, server: newIP, port: config.port, uuid: config.id, alterId: config.aid || 0,
-                network: config.net, tls: config.tls, host: config.host || config.sni, path: config.path
-            };
-        } catch(e) { return null; }
-    }
-
-    function modifySS(link, newIP, newPort, nameExt) {
-        try {
-            const urlObj = new URL(link);
-            urlObj.hostname = newIP;
-            urlObj.port = newPort;
-            let rawHash = decodeURIComponent(urlObj.hash.substring(1));
-            urlObj.hash = "#" + encodeURIComponent(rawHash + nameExt);
-            return { type: "ss", link: urlObj.toString(), name: rawHash + nameExt };
-        } catch(e) { return null; }
-    }
-
-    // --- UI 交互 ---
-    function switchTab(tab) {
-        currentTab = tab;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
         updateOutput();
-    }
-
-    function updateOutput() {
-        const area = document.getElementById('outputArea');
-        if (generatedNodes.length === 0) { area.value = ""; return; }
-        if (currentTab === 'raw') area.value = generatedNodes.map(n => n.link).join('\n');
-        else if (currentTab === 'b64') area.value = Base64.encode(generatedNodes.map(n => n.link).join('\n'));
-        else if (currentTab === 'clash') area.value = generateClashYaml(generatedNodes);
-    }
-
-    function generateClashYaml(nodes) {
-        let yaml = "# Copy into 'proxies:' section:\nproxies:\n";
-        nodes.forEach(n => {
-            if (n.type === 'vless') {
-                yaml += `  - name: "${n.name}"\n    type: vless\n    server: ${n.server}\n    port: ${n.port}\n    uuid: ${n.uuid}\n    udp: true\n    tls: true\n    network: ${n.params.type || 'ws'}\n    servername: ${n.params.sni || ''}\n    skip-cert-verify: true\n`;
-                if(n.params.type === 'ws') yaml += `    ws-opts:\n      path: "${n.params.path || '/'}"\n      headers:\n        Host: ${n.params.host || n.params.sni}\n`;
-                yaml += "\n";
-            } else if (n.type === 'vmess') {
-                yaml += `  - name: "${n.name}"\n    type: vmess\n    server: ${n.server}\n    port: ${n.port}\n    uuid: ${n.uuid}\n    alterId: ${n.alterId}\n    cipher: auto\n    tls: ${n.tls === 'tls'}\n    network: ${n.network}\n    skip-cert-verify: true\n`;
-                if(n.network === 'ws') yaml += `    ws-opts:\n      path: "${n.path}"\n      headers:\n        Host: ${n.host}\n`;
-                 yaml += "\n";
-            }
-        });
-        return yaml;
-    }
-
-    const Base64 = {
-        encode: (str) => btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1))),
-        decode: (str) => decodeURIComponent(Array.prototype.map.call(atob(str), c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''))
-    };
-
-    function showToast(msg, color) {
-        const el = document.getElementById('status-toast');
-        el.innerText = msg;
-        el.style.color = color;
-        el.style.opacity = 1;
-        setTimeout(() => el.style.opacity = 0, 3000);
-    }
-
-    function clearInputs() {
-        document.getElementById('sourceNode').value = '';
-        document.getElementById('ipList').value = '';
-        updateExtractCount(0);
-        updateGenCount(0);
-        showToast("已清空数据", "#fff");
-    }
-
-    function copyResult() {
-        const output = document.getElementById('outputArea');
-        output.select();
-        document.execCommand('copy');
-        showToast("📋 已复制到剪贴板", "#4ade80");
+        await new Promise(r => setTimeout(r, 500)); 
     }
     
-    function downloadResult() {
-        const blob = new Blob([document.getElementById('outputArea').value], { type: "text/plain" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "nodes_optimized.txt";
-        a.click();
+    btn.disabled = false;
+    btn.innerText = "⚡ 开始转换 (自动去重)";
+    progress.innerText = "完成";
+    showToast(`✅ 完成，共 ${generatedNodes.length} 个节点`, "#4ade80");
+}
+
+function normalizeGroupName(rawName) {
+    let clean = rawName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27FF]|\uFE0F|[^\u4e00-\u9fa5a-zA-Z0-9]/g, "").toLowerCase();
+    const mappings = {
+        "电报消息": ["电报", "telegram", "tg", "消息", "信息"],
+        "油管视频": ["油管", "youtube", "ytb", "视频"],
+        "奈飞视频": ["奈飞", "netflix", "nf"],
+        "OpenAi":   ["openai", "chatgpt", "gpt", "ai"],
+        "微软服务": ["微软", "microsoft", "ms"],
+        "苹果服务": ["苹果", "apple"],
+        "应用净化": ["广告", "ad", "ban", "reject", "净化", "拦截"],
+        "节点选择": ["节点", "proxy", "select", "选择"],
+        "国外媒体": ["国外", "global", "media"], 
+        "国内媒体": ["国内", "china", "cn"],
+        "漏网之鱼": ["漏网", "final", "match", "other"]
+    };
+    for (const [standard, keywords] of Object.entries(mappings)) {
+        if (keywords.some(k => clean.includes(k))) return standard;
     }
+    const readable = rawName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27FF]|\uFE0F/g, "").trim();
+    if (hardcodedGroups.includes(readable)) return readable;
+    return readable || rawName;
+}
+
+async function fetchAndApplyRules() {
+    const ruleUrl = document.getElementById('ruleUrl').value.trim();
+    if (!ruleUrl) return showToast("⚠️ 请输入规则链接", "#f87171");
+    
+    showToast("📥 正在抓取...", "#60a5fa");
+    try {
+        const response = await fetch(ruleUrl);
+        const iniContent = await response.text();
+        const ruleMap = new Map(); 
+        
+        iniContent.split('\n').forEach(line => {
+            if (line.trim().startsWith('ruleset=')) {
+                const parts = line.replace('ruleset=', '').split(',');
+                const groupName = normalizeGroupName(parts[0].trim());
+                const url = parts[1].trim();
+                let name = url.split('/').pop().split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+                if (ruleMap.has(name)) name += "_" + Math.random().toString(36).substr(2, 4);
+                const isList = url.endsWith('.list') || url.endsWith('.txt');
+                ruleMap.set(name, { 
+                    name, 
+                    group: groupName, 
+                    url,
+                    type: isList ? 'classical' : 'classical', 
+                    format: isList ? 'text' : 'yaml'
+                });
+            }
+        });
+
+        const newRules = Array.from(ruleMap.values());
+        if (newRules.length > 0) {
+            activeRules = newRules;
+            showToast(`✅ 加载 ${newRules.length} 个规则`, "#4ade80");
+            if (currentTab === 'clash') updateOutput();
+        }
+    } catch (e) { showToast("❌ 加载失败", "#f87171"); }
+}
+
+function createNode(link, ip, port, nodeName) {
+    try {
+        if (link.startsWith("vmess://")) {
+            const config = JSON.parse(Base64.decode(link.replace("vmess://", "")));
+            config.add = ip; config.port = parseInt(port); config.ps = nodeName;
+            return { type: "vmess", link: "vmess://" + Base64.encode(JSON.stringify(config)), name: nodeName, server: ip, port: port, secret: config.id, config };
+        } else {
+            const url = new URL(link);
+            url.hostname = ip; url.port = port; url.hash = "#" + encodeURIComponent(nodeName);
+            const secret = url.username || url.password;
+            return { type: url.protocol.replace(':',''), link: url.toString(), name: nodeName, server: ip, port: port, secret, config: url };
+        }
+    } catch (e) { return null; }
+}
+
+function parseNode(link) {
+    try {
+        if (link.startsWith('vmess://')) {
+            const config = JSON.parse(Base64.decode(link.replace('vmess://', '')));
+            return { type: 'vmess', link, name: config.ps, server: config.add, port: config.port, secret: config.id, config };
+        } else {
+            const url = new URL(link);
+            const secret = url.username || url.password;
+            return { type: url.protocol.replace(':',''), link, name: decodeURIComponent(url.hash.substring(1)), server: url.hostname, port: url.port, secret, config: url };
+        }
+    } catch(e) { return null; }
+}
+
+function getIconForGroup(name) {
+    const Orz3 = "https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/";
+    const Xiaolin = "https://raw.githubusercontent.com/xiaolin-007/clash/main/icon/";
+    const Verge = "https://raw.githubusercontent.com/clash-verge-rev/clash-verge-rev.github.io/main/docs/assets/icons/";
+    const Koolson = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/"; 
+    const Homomix = "https://raw.githubusercontent.com/Vbaethon/HOMOMIX/main/Icon/Color/";
+
+    const mapping = [
+        { key: "OpenAi", icon: Orz3 + "OpenAI.png" },
+        { key: "ChatGPT", icon: Orz3 + "OpenAI.png" },
+        { key: "Telegram", icon: Orz3 + "Telegram.png" },
+        { key: "电报", icon: Orz3 + "Telegram.png" },
+        { key: "Google", icon: Orz3 + "Google.png" },
+        { key: "谷歌", icon: Orz3 + "Google.png" },
+        { key: "YouTube", icon: Orz3 + "YouTube.png" },
+        { key: "油管", icon: Orz3 + "YouTube.png" },
+        { key: "Netflix", icon: Orz3 + "Netflix.png" },
+        { key: "奈飞", icon: Orz3 + "Netflix.png" },
+        { key: "Microsoft", icon: Orz3 + "Microsoft.png" },
+        { key: "微软", icon: Orz3 + "Microsoft.png" },
+        { key: "Apple", icon: Orz3 + "Apple.png" },
+        { key: "苹果", icon: Orz3 + "Apple.png" },
+        { key: "Steam", icon: Orz3 + "Steam.png" },
+        { key: "游戏", icon: Orz3 + "Steam.png" },
+        { key: "Bilibili", icon: Xiaolin + "bilibili.svg" }, 
+        { key: "哔哩哔哩", icon: Xiaolin + "bilibili.svg" },
+        { key: "Bahamut", icon: Xiaolin + "Bahamut.svg" },
+        { key: "巴哈姆特", icon: Xiaolin + "Bahamut.svg" },
+        { key: "Spotify", icon: Orz3 + "Spotify.png" },
+        { key: "Discord", icon: Orz3 + "Discord.png" },
+        { key: "Twitter", icon: Orz3 + "Twitter.png" },
+        { key: "ChinaIP", icon: Orz3 + "China.png" },
+        { key: "China", icon: Orz3 + "China.png" },
+        { key: "Global", icon: Orz3 + "Global.png" },
+        { key: "国外", icon: Orz3 + "Global.png" },
+        { key: "Netease", icon: Koolson + "Netease_Music.png" }, 
+        { key: "网易音乐", icon: Koolson + "Netease_Music.png" },
+        { key: "全球直连", icon: Verge + "link.svg" }, 
+        { key: "全球拦截", icon: Verge + "block.svg" }, 
+        { key: "应用净化", icon: Koolson + "Advertising.png" },
+        { key: "国内媒体", icon: Koolson + "Media.png" },
+        { key: "Hong Kong", icon: Orz3 + "HK.png" },
+        { key: "香港", icon: Orz3 + "HK.png" },
+        { key: "Japan", icon: Orz3 + "JP.png" },
+        { key: "日本", icon: Orz3 + "JP.png" },
+        { key: "Taiwan", icon: Orz3 + "TW.png" },
+        { key: "台湾", icon: Orz3 + "TW.png" },
+        { key: "United States", icon: Orz3 + "US.png" },
+        { key: "美国", icon: Orz3 + "US.png" },
+        { key: "Singapore", icon: Orz3 + "SG.png" },
+        { key: "狮城", icon: Orz3 + "SG.png" },
+        { key: "Korea", icon: Orz3 + "KR.png" },
+        { key: "韩国", icon: Orz3 + "KR.png" },
+        { key: "漏网之鱼", icon: Orz3 + "Final.png" },
+        { key: "Match", icon: Orz3 + "Final.png" },
+        { key: "Auto", icon: Orz3 + "Urltest.png" },
+        { key: "自动", icon: Orz3 + "Urltest.png" },
+        { key: "Select", icon: Orz3 + "Static.png" },
+        { key: "节点选择", icon: Koolson + "Proxy.png" },
+        { key: "手动切换", icon: Orz3 + "Static.png" },
+        { key: "Reject", icon: Orz3 + "Reject.png" },
+        { key: "拦截", icon: Orz3 + "Reject.png" },
+        { key: "净化", icon: Orz3 + "Reject.png" },
+        { key: "Direct", icon: Orz3 + "Direct.png" },
+        { key: "直连", icon: Orz3 + "Direct.png" },
+        { key: "Cloudflare", icon: Orz3 + "Cloudflare.png" }
+    ];
+
+    for (let item of mapping) {
+        if (name.toLowerCase().includes(item.key.toLowerCase())) {
+            return item.icon;
+        }
+    }
+
+    return Orz3 + "Static.png";
+}
+
+// 🔴 关键修复：仿 Xiaolin 逻辑（默认国外加密 DNS，国内白名单直连）
+function generateClashYaml(nodes) {
+    let y = `port: 7890
+socks-port: 7891
+allow-lan: true
+mode: Rule
+log-level: info
+external-controller: :9090
+find-process-mode: strict
+global-client-fingerprint: chrome
+dns:
+  enable: true
+  ipv6: false
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.localhost"
+  respect-rules: true
+  
+  # 1. 代理节点本身的域名：必须走国内 DNS 快速解析，否则无法连接
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  
+  # 2. 默认 DNS (核心防泄露)：任何不在规则内的域名，统统走 Google/CF，
+  # 配合 respect-rules，这会让 Clash 将其视为"国外请求"并交给代理节点解析。
+  # 这样 ISP 就无法看到你访问了什么生僻域名。
+  nameserver:
+    - https://dns.google/dns-query
+    - https://dns.cloudflare.com/dns-query
+  
+  # 3. 默认 DNS 的 Bootstrap IP：为了能解析上面的 dns.google 域名
+  default-nameserver: 
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 4. 国内分流策略：只有明确是 CN/Private 的，才允许走国内 DNS
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+
+proxies:
+`;
+
+    nodes.forEach(n => {
+        let name = `"${n.name.replace(/['"]/g, '')}"`;
+        if (n.type === 'vless') {
+            const p = Object.fromEntries(n.config.searchParams);
+            y += `  - {name: ${name}, server: ${n.server}, port: ${n.port}, type: vless, uuid: "${n.secret}"`;
+            if (p.sni) y += `, sni: "${p.sni}"`;
+            y += `, skip-cert-verify: false, network: ${p.type || 'tcp'}`;
+            if ((p.type || 'tcp') === 'ws') {
+                let path = decodeURIComponent(p.path || '/');
+                if (!path.includes('ed=2048')) path = path.includes('?') ? path + '&ed=2048' : path + '?ed=2048';
+                const host = p.host || p.sni || n.server; 
+                y += `, ws-opts: {path: "${path}", headers: {Host: "${host}"}}`;
+            }
+            y += `}\n`;
+        } else if (n.type === 'trojan') {
+            const p = Object.fromEntries(n.config.searchParams);
+            y += `  - {name: ${name}, server: ${n.server}, port: ${n.port}, type: trojan, password: "${n.secret}"`;
+            if (p.sni) y += `, sni: "${p.sni}"`;
+            y += `, skip-cert-verify: false, network: ${p.type || 'tcp'}`;
+            if ((p.type || 'tcp') === 'ws') {
+                let path = decodeURIComponent(p.path || '/');
+                if (!path.includes('ed=2048')) path = path.includes('?') ? path + '&ed=2048' : path + '?ed=2048';
+                const host = p.host || p.sni || n.server;
+                y += `, ws-opts: {path: "${path}", headers: {Host: "${host}"}}`;
+            }
+            y += `}\n`;
+        } else if (n.type === 'vmess') {
+            const c = n.config;
+            y += `  - {name: ${name}, server: ${n.server}, port: ${n.port}, type: vmess, uuid: "${c.id}", alterId: 0, cipher: auto, tls: ${c.tls==='tls'}, network: ${c.net||'tcp'}, skip-cert-verify: true`;
+            if (c.net === 'ws') {
+                let path = c.path || '/';
+                if (!path.includes('ed=2048')) path = path.includes('?') ? path + '&ed=2048' : path + '?ed=2048';
+                y += `, ws-opts: {path: "${path}", headers: {Host: "${c.host || n.server}"}}`;
+            }
+            y += `}\n`;
+        }
+    });
+
+    const allNames = nodes.map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n');
+    const hk = nodes.filter(n => /港|HK|Hong Kong/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+    const jp = nodes.filter(n => /日本|JP|Japan|东京/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+    const us = nodes.filter(n => /美|US|United States|洛杉矶|硅谷|西雅图/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+    const sg = nodes.filter(n => /新加坡|坡|狮城|SG|Singapore/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+    const tw = nodes.filter(n => /台|TW|Taiwan/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+    const kr = nodes.filter(n => /韩|KR|Korea|首尔/i.test(n.name)).map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n') || '      - DIRECT';
+
+    y += `\nrule-providers:\n`;
+    activeRules.forEach(rule => {
+        y += `  ${rule.name}:\n`;
+        y += `    type: http\n`;
+        y += `    behavior: ${rule.type || 'classical'}\n`;
+        y += `    format: ${rule.format || 'yaml'}\n`;
+        y += `    url: "${rule.url}"\n`;
+        y += `    path: ./ruleset/${rule.name}.${rule.format === 'text' ? 'list' : 'yaml'}\n`;
+        y += `    interval: 86400\n`;
+    });
+
+    y += `
+proxy-groups:
+  - name: 节点选择
+    type: select
+    icon: ${getIconForGroup("节点选择")}
+    proxies:
+      - 自动选择
+      - 香港节点
+      - 日本节点
+      - 美国节点
+      - 狮城节点
+      - 台湾节点
+      - 韩国节点
+      - 手动切换
+      - DIRECT
+  - name: 手动切换
+    type: select
+    icon: ${getIconForGroup("手动切换")}
+    proxies:
+${allNames}
+  - name: 自动选择
+    type: url-test
+    icon: ${getIconForGroup("自动选择")}
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+${allNames}
+  - name: 电报消息
+    type: select
+    icon: ${getIconForGroup("电报消息")}
+    proxies:
+      - 节点选择
+      - 狮城节点
+      - 香港节点
+      - 台湾节点
+      - 日本节点
+      - 美国节点
+      - 韩国节点
+      - 手动切换
+      - DIRECT
+  - name: OpenAi
+    type: select
+    icon: ${getIconForGroup("OpenAi")}
+    proxies:
+      - 美国节点
+      - 节点选择
+      - 自动选择
+      - 狮城节点
+      - 香港节点
+      - 日本节点
+      - 手动切换
+  - name: 油管视频
+    type: select
+    icon: ${getIconForGroup("油管视频")}
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 香港节点
+      - 日本节点
+      - 美国节点
+      - 狮城节点
+      - 手动切换
+      - DIRECT
+  - name: 奈飞视频
+    type: select
+    icon: ${getIconForGroup("奈飞视频")}
+    proxies:
+      - 节点选择
+      - 香港节点
+      - 日本节点
+      - 美国节点
+      - 狮城节点
+      - 台湾节点
+      - 手动切换
+      - DIRECT
+  - name: 巴哈姆特
+    type: select
+    icon: ${getIconForGroup("巴哈姆特")}
+    proxies:
+      - 台湾节点
+      - 节点选择
+      - 手动切换
+      - DIRECT
+  - name: 哔哩哔哩
+    type: select
+    icon: ${getIconForGroup("哔哩哔哩")}
+    proxies:
+      - 全球直连
+      - 台湾节点
+      - 香港节点
+  - name: 国外媒体
+    type: select
+    icon: ${getIconForGroup("国外媒体")}
+    proxies:
+      - 节点选择
+      - 自动选择
+      - 香港节点
+      - 日本节点
+      - 美国节点
+      - 狮城节点
+      - 台湾节点
+      - 韩国节点
+      - 手动切换
+      - DIRECT
+  - name: 国内媒体
+    type: select
+    icon: ${getIconForGroup("国内媒体")}
+    proxies:
+      - DIRECT
+      - 香港节点
+      - 台湾节点
+      - 狮城节点
+      - 手动切换
+  - name: 谷歌FCM
+    type: select
+    icon: ${getIconForGroup("谷歌FCM")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 美国节点
+      - 香港节点
+      - 日本节点
+      - 狮城节点
+      - 手动切换
+  - name: 微软Bing
+    type: select
+    icon: ${getIconForGroup("微软Bing")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 美国节点
+      - 香港节点
+      - 手动切换
+  - name: 微软云盘
+    type: select
+    icon: ${getIconForGroup("微软云盘")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 美国节点
+      - 手动切换
+  - name: 微软服务
+    type: select
+    icon: ${getIconForGroup("微软服务")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 手动切换
+  - name: 苹果服务
+    type: select
+    icon: ${getIconForGroup("苹果服务")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 美国节点
+      - 手动切换
+  - name: 游戏平台
+    type: select
+    icon: ${getIconForGroup("游戏平台")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 美国节点
+      - 香港节点
+      - 手动切换
+  - name: 网易音乐
+    type: select
+    icon: ${getIconForGroup("网易音乐")}
+    proxies:
+      - DIRECT
+      - 节点选择
+  - name: 全球直连
+    type: select
+    icon: ${getIconForGroup("全球直连")}
+    proxies:
+      - DIRECT
+      - 节点选择
+      - 自动选择
+  - name: 全球拦截
+    type: select
+    icon: ${getIconForGroup("全球拦截")}
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 应用净化
+    type: select
+    icon: ${getIconForGroup("应用净化")}
+    proxies:
+      - REJECT
+      - DIRECT
+  - name: 漏网之鱼
+    type: select
+    icon: ${getIconForGroup("漏网之鱼")}
+    proxies:
+      - 节点选择
+      - 全球直连
+      - 自动选择
+      - 香港节点
+      - 日本节点
+      - 美国节点
+      - 狮城节点
+      - 手动切换
+  - name: 香港节点
+    type: select
+    icon: ${getIconForGroup("香港节点")}
+    proxies:
+${hk}
+  - name: 日本节点
+    type: select
+    icon: ${getIconForGroup("日本节点")}
+    proxies:
+${jp}
+  - name: 美国节点
+    type: select
+    icon: ${getIconForGroup("美国节点")}
+    proxies:
+${us}
+  - name: 狮城节点
+    type: select
+    icon: ${getIconForGroup("狮城节点")}
+    proxies:
+${sg}
+  - name: 台湾节点
+    type: select
+    icon: ${getIconForGroup("台湾节点")}
+    proxies:
+${tw}
+  - name: 韩国节点
+    type: select
+    icon: ${getIconForGroup("韩国节点")}
+    proxies:
+${kr}
+`;
+
+    // 动态生成其他规则组
+    const groupMap = {};
+    activeRules.forEach(r => {
+        if (!hardcodedGroups.includes(r.group)) {
+            if (!groupMap[r.group]) groupMap[r.group] = [];
+            groupMap[r.group].push(r.name);
+        }
+    });
+
+    Object.keys(groupMap).forEach(group => {
+        const cleanName = group.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ''); 
+        y += `  - name: "${group}"\n    type: select\n    icon: ${getIconForGroup(group)}\n    proxies:\n      - 节点选择\n      - 手动切换\n      - DIRECT\n`;
+    });
+
+    y += `\nrules:\n`;
+    activeRules.forEach(r => {
+        let target = r.group;
+        if (['Cloudflare', 'LocalAreaNetwork', 'ChinaIP', 'ChinaDomain', 'UnBan'].includes(r.group)) target = 'DIRECT';
+        else if (['BanAD', 'BanProgramAD'].includes(r.group)) target = 'REJECT';
+        else if (r.group === 'GoogleCN') target = 'Google';
+        else if (r.group === 'SteamCN') target = '游戏平台';
+        else if (r.group === 'Apple') target = '苹果服务';
+        else if (r.group === 'GoogleFCM') target = '谷歌FCM';
+        else if (r.group === 'Microsoft') target = '微软服务';
+        else if (r.group === 'Telegram') target = '电报消息';
+        else if (r.group === 'OpenAI') target = 'OpenAi';
+        else if (r.group === 'YouTube') target = '油管视频';
+        else if (r.group === 'Netflix') target = '奈飞视频';
+        else if (r.group === 'GlobalMedia') target = '国外媒体';
+        else if (r.group === 'China') target = '国内媒体';
+        else if (!hardcodedGroups.includes(r.group) && !groupMap[r.group]) target = '节点选择';
+        
+        y += `  - RULE-SET,${r.name},${target}\n`;
+    });
+    
+    y += `  - GEOIP,CN,DIRECT\n  - MATCH,漏网之鱼\n`;
+    return y;
+}
+
+function updateOutput() {
+    const area = document.getElementById('outputArea');
+    if (generatedNodes.length === 0) return;
+    if (currentTab === 'raw') area.value = generatedNodes.map(n => n.link).join('\n');
+    else if (currentTab === 'b64') area.value = Base64.encode(generatedNodes.map(n => n.link).join('\n'));
+    else if (currentTab === 'clash') area.value = generateClashYaml(generatedNodes);
+    document.getElementById('genCountDisplay').innerText = `${generatedNodes.length} 个节点`;
+}
+
+function switchTab(tab) { currentTab = tab; updateTabsUI(tab); updateOutput(); }
+function updateTabsUI(tab) { document.querySelectorAll('.tab').forEach((t, i) => { t.classList.remove('active'); if ((tab==='raw'&&i===0)||(tab==='b64'&&i===1)||(tab==='clash'&&i===2)) t.classList.add('active'); }); }
+function independentTransform() { const c = document.getElementById('outputArea').value.trim(); if(!c)return showToast("⚠️ 内容为空","#f87171"); if(c.startsWith('proxies:')) clashToLinks(c); else linksToClash(c); }
+function linksToClash(t) { generatedNodes = t.split('\n').filter(l=>l.includes('://')).map(l=>parseNode(l.trim())).filter(n=>n); currentTab='clash'; updateTabsUI('clash'); updateOutput(); showToast(`✅ 转换 ${generatedNodes.length} 个`,"#4ade80"); }
+function clashToLinks(t) { showToast("⚠️ 请直接粘贴链接列表转换", "#fcd34d"); }
+function cleanAndExtract() { const r = document.getElementById('ipList').value; const s = new Set(); r.split(/[\r\n]+/).forEach(l=>{const i=l.match(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}/);if(i)s.add(i[0])}); document.getElementById('ipList').value=Array.from(s).join('\n'); showToast(`✅ 提取 ${s.size} IP`,"#4ade80"); }
+function showToast(m,c) { const e=document.getElementById('status-toast'); e.innerText=m; e.style.color=c; e.style.opacity=1; setTimeout(()=>e.style.opacity=0,3000); }
+function copyResult() { document.getElementById('outputArea').select(); document.execCommand('copy'); showToast("📋 已复制","#4ade80"); }
+function downloadResult() { const b=new Blob([document.getElementById('outputArea').value],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=currentTab==='clash'?"clash.yaml":"nodes.txt"; a.click(); }
 </script>
 </body>
 </html>
