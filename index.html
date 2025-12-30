@@ -370,45 +370,26 @@ const Base64 = {
 
 const hardcodedGroups = ["节点选择", "手动切换", "自动选择", "电报消息", "OpenAi", "油管视频", "奈飞视频", "巴哈姆特", "哔哩哔哩", "国外媒体", "国内媒体", "谷歌FCM", "微软Bing", "微软云盘", "微软服务", "苹果服务", "游戏平台", "网易音乐", "全球直连", "全球拦截", "应用净化", "漏网之鱼"];
 
-// --- 核心更新：扩展的国家/地区映射字典 (code -> name) ---
-// --- 核心更新：更全的国家/地区映射字典 (code -> name) ---
 const countryMap = {
-    // 亚洲
     "CN": "中国", "HK": "香港", "MO": "澳门", "TW": "台湾",
     "JP": "日本", "KR": "韩国", "SG": "狮城", "IN": "印度",
     "ID": "印尼", "MY": "马来西亚", "TH": "泰国", "VN": "越南",
     "PH": "菲律宾", "PK": "巴基斯坦", "IL": "以色列", "TR": "土耳其",
     "AE": "阿联酋", "SA": "沙特", "IR": "伊朗", "KP": "朝鲜",
-    "CY": "塞浦路斯", // <--- 补上了这个
-
-    // 北美
-    "US": "美国", "CA": "加拿大", "MX": "墨西哥", 
-
-    // 欧洲
+    "CY": "塞浦路斯", "US": "美国", "CA": "加拿大", "MX": "墨西哥", 
     "GB": "英国", "DE": "德国", "FR": "法国", "NL": "荷兰",
     "RU": "俄罗斯", "IT": "意大利", "ES": "西班牙", "SE": "瑞典",
     "CH": "瑞士", "IE": "爱尔兰", "UA": "乌克兰", "PL": "波兰",
     "NO": "挪威", "FI": "芬兰", "DK": "丹麦", "PT": "葡萄牙",
     "AT": "奥地利", "GR": "希腊", "BE": "比利时", "HU": "匈牙利",
     "CZ": "捷克", "RO": "罗马尼亚", "BG": "保加利亚", "IS": "冰岛",
-
-    // 大洋洲
-    "AU": "澳大利亚", "NZ": "新西兰", 
-
-    // 南美
-    "BR": "巴西", "AR": "阿根廷", "CL": "智利", "CO": "哥伦比亚",
-    "PE": "秘鲁",
-
-    // 非洲
-    "ZA": "南非", "EG": "埃及", "NG": "尼日利亚"
+    "AU": "澳大利亚", "NZ": "新西兰", "BR": "巴西", "AR": "阿根廷", 
+    "CL": "智利", "CO": "哥伦比亚", "PE": "秘鲁", "ZA": "南非", 
+    "EG": "埃及", "NG": "尼日利亚"
 };
 
+// 修复：强制使用 HTTPS，并移除了不支持 HTTPS 的 ip-api.com
 const apiProviders = [
-    {
-        name: 'ip-api.com',
-        url: (ip) => `http://ip-api.com/json/${ip}?lang=zh-CN`,
-        parse: (data) => ({ code: data.countryCode, name: data.country })
-    },
     {
         name: 'ipwho.is',
         url: (ip) => `https://ipwho.is/${ip}?lang=zh-CN`,
@@ -423,22 +404,19 @@ const apiProviders = [
 
 function translateCountry(code, name) {
     if (countryMap[code]) return countryMap[code];
-    // 如果不在字典里，尝试模糊匹配或直接返回API的名称
     const map = { "United States": "美国", "USA": "美国", "Hong Kong": "香港", "Japan": "日本", "Singapore": "新加坡", "Taiwan": "台湾", "China": "中国", "Korea": "韩国", "United Kingdom": "英国", "Germany": "德国" };
     return map[name] || name || code; 
 }
 
 function getFlagEmoji(countryCode) {
     if (!countryCode) return '🇺🇸'; 
-    if (countryCode === 'TW') return '🇨🇳'; // 某些平台特殊处理，可按需改回 TW
+    if (countryCode === 'TW') return '🇨🇳'; 
     const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
     return String.fromCodePoint(...codePoints);
 }
 
-// --- 核心更新：Flagpedia 图标获取 ---
 function getFlagIconUrl(countryCode) {
     if (!countryCode) return null;
-    // Flagpedia 使用 flagcdn.com, 格式为小写代码
     return `https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`;
 }
 
@@ -484,11 +462,9 @@ let currentTab = 'raw';
 async function fetchIPInfo(ip, preferredIndex) {
     const totalProviders = apiProviders.length;
     let startIndex = 0;
-    if (location.protocol === 'https:' && apiProviders[0].name === 'ip-api.com') startIndex = 1;
 
     for (let i = startIndex; i < totalProviders; i++) {
         let currentIndex = (preferredIndex + i) % totalProviders;
-        if (location.protocol === 'https:' && currentIndex === 0) currentIndex = 1;
         const provider = apiProviders[currentIndex];
         try {
             const controller = new AbortController();
@@ -499,7 +475,6 @@ async function fetchIPInfo(ip, preferredIndex) {
                 const data = await res.json();
                 if (data.status === 'fail' && data.message === 'quota reached') throw new Error("Quota reached"); 
                 const info = provider.parse(data);
-                // 传递 code 供后续处理
                 if (info.code) return { code: info.code, name: translateCountry(info.code, info.name), rawName: info.name };
             }
         } catch (e) {}
@@ -530,13 +505,9 @@ async function generateNodes() {
             const globalIndex = i + idx;
             const info = await fetchIPInfo(ip, globalIndex);
             const flagEmoji = getFlagEmoji(info.code);
-            
             const port = document.getElementById('defaultPort').value;
             const suffix = document.getElementById('tagSuffix').value;
-            // 节点名称： 🇺🇸 美国-优选-1
             const nodeName = `${flagEmoji} ${info.name}${suffix}-${globalIndex + 1}`;
-            
-            // 传入 countryCode 供后续分组使用
             return createNode(sourceLink || "vless://uuid@ip:443#模板", ip, port, nodeName, info.code, info.name);
         });
 
@@ -614,10 +585,8 @@ async function fetchAndApplyRules() {
 }
 
 function createNode(link, ip, port, nodeName, countryCode, countryName) {
-    // 默认值
     if (!countryCode) countryCode = 'US';
     if (!countryName) countryName = '美国';
-    
     try {
         let node = null;
         if (link.startsWith("vmess://")) {
@@ -630,10 +599,7 @@ function createNode(link, ip, port, nodeName, countryCode, countryName) {
             const secret = url.username || url.password;
             node = { type: url.protocol.replace(':',''), link: url.toString(), name: nodeName, server: ip, port: port, secret, config: url };
         }
-        // 附加元数据
-        if(node) {
-            node.meta = { countryCode, countryName };
-        }
+        if(node) node.meta = { countryCode, countryName };
         return node;
     } catch (e) { return null; }
 }
@@ -659,7 +625,6 @@ function getIconForGroup(name) {
     const Verge = "https://raw.githubusercontent.com/clash-verge-rev/clash-verge-rev.github.io/main/docs/assets/icons/";
     const Koolson = "https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/"; 
     
-    // 1. 优先检查是否是国家名（动态匹配 Flagpedia）
     for (const [code, cName] of Object.entries(countryMap)) {
         if (name.includes(cName) || name.includes(code)) {
             return getFlagIconUrl(code);
@@ -720,11 +685,11 @@ function getIconForGroup(name) {
             return item.icon;
         }
     }
-
     return Orz3 + "Static.png";
 }
 
 function generateClashYaml(nodes) {
+    // 采用“完美平衡”的DNS配置：国内快，国外防泄露且有兜底
     let y = `port: 7890
 socks-port: 7891
 allow-lan: true
@@ -733,6 +698,7 @@ log-level: info
 external-controller: :9090
 find-process-mode: strict
 global-client-fingerprint: chrome
+keep-alive-interval: 30
 dns:
   enable: true
   ipv6: false
@@ -743,19 +709,32 @@ dns:
     - "*.lan"
     - "*.localhost"
   respect-rules: true
+  
+  # 1. 确保节点域名本身能被解析
   proxy-server-nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
+
+  # 2. 默认 DNS (设为国外！这样漏网之鱼/测试网站 只会看到国外DNS)
   nameserver:
     - https://dns.google/dns-query
     - https://dns.cloudflare.com/dns-query
-  default-nameserver: 
-    - 223.5.5.5
-    - 119.29.29.29
+
+  # 3. 分流策略 (核心：只有国内网站才走国内DNS，解决速度问题)
   nameserver-policy:
     "geosite:cn,private":
       - https://dns.alidns.com/dns-query
       - https://doh.pub/dns-query
+
+  # 4. 兜底 (保持国外，防污染)
+  fallback:
+    - https://dns.google/dns-query
+    - https://dns.cloudflare.com/dns-query
+  
+  fallback-filter:
+    geoip: true
+    ipcidr:
+      - 240.0.0.0/4
 
 proxies:
 `;
@@ -798,18 +777,14 @@ proxies:
         }
     });
 
-    // --- 动态生成国家分组逻辑 ---
-    // 1. 扫描所有节点，确定有哪些国家
     const dynamicGroups = {};
     const allNames = nodes.map(n => `      - "${n.name.replace(/['"]/g, '')}"`).join('\n');
 
     nodes.forEach(n => {
         let matchedName = null;
-        // 优先使用 meta 数据（如果是本工具生成的）
         if (n.meta && n.meta.countryName) {
             matchedName = n.meta.countryName;
         } else {
-            // 回退到字符串匹配（针对粘贴的链接）
             for (const [code, cName] of Object.entries(countryMap)) {
                 if (n.name.includes(cName) || n.name.includes(code)) {
                     matchedName = cName;
@@ -817,28 +792,40 @@ proxies:
                 }
             }
         }
-
         if (matchedName) {
-            const groupKey = matchedName + "节点"; // 例如：美国节点
+            const groupKey = matchedName + "节点"; 
             if (!dynamicGroups[groupKey]) dynamicGroups[groupKey] = [];
             dynamicGroups[groupKey].push(`      - "${n.name.replace(/['"]/g, '')}"`);
         }
     });
 
-    // 2. 生成各国家分组的字符串
     let countryGroupYaml = "";
     let countryGroupNames = []; // 用于添加到 "节点选择" 等主组中
 
     for (const [groupName, proxies] of Object.entries(dynamicGroups)) {
         countryGroupNames.push(groupName);
+        
+        // 1. 生成该国家的【故障转移】子策略 (隐藏在内部，核心功能)
+        // 逻辑：死守第一个节点，挂了才换。IP 极其稳定。
+        const autoName = `${groupName}自动`; 
+        countryGroupYaml += `  - name: ${autoName}
+    type: fallback
+    icon: ${getIconForGroup(groupName)}
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+${proxies.join('\n')}\n`;
+
+        // 2. 生成该国家的【主选单】 (Select 模式)
+        // 逻辑：默认选中上面的“自动”，但也允许你手动选特定节点
         countryGroupYaml += `  - name: ${groupName}
     type: select
     icon: ${getIconForGroup(groupName)}
     proxies:
+      - ${autoName}     # <--- ✅ 默认第一项就是“故障转移”，稳如老狗
 ${proxies.join('\n')}\n`;
     }
     
-    // 格式化“节点选择”里要包含的子组
     const countrySubGroups = countryGroupNames.map(n => `      - ${n}`).join('\n') || '      - DIRECT';
 
     y += `\nrule-providers:\n`;
@@ -853,77 +840,104 @@ proxy-groups:
     icon: ${getIconForGroup("节点选择")}
     proxies:
       - 自动选择
+      - 故障转移      # <--- ✅ 新增：主菜单包含故障转移
 ${countrySubGroups}
       - 手动切换
       - DIRECT
-  - name: 手动切换
-    type: select
-    icon: ${getIconForGroup("手动切换")}
-    proxies:
-${allNames}
+
   - name: 自动选择
     type: url-test
     icon: ${getIconForGroup("自动选择")}
     url: http://www.gstatic.com/generate_204
     interval: 300
+    tolerance: 50
     proxies:
 ${allNames}
+
+  - name: 故障转移
+    type: fallback    # <--- ✅ 新增：全局故障转移策略
+    icon: https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/Final.png
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+${allNames}
+
+  - name: 手动切换
+    type: select
+    icon: ${getIconForGroup("手动切换")}
+    proxies:
+${allNames}
+
   - name: 电报消息
     type: select
     icon: ${getIconForGroup("电报消息")}
     proxies:
-      - 节点选择
-${countrySubGroups}
-      - 手动切换
-      - DIRECT
-  - name: OpenAi
-    type: select
-    icon: ${getIconForGroup("OpenAi")}
-    proxies:
+      - 故障转移      # <--- ✅ 优化：电报优先用故障转移
       - 节点选择
       - 自动选择
 ${countrySubGroups}
       - 手动切换
+      - DIRECT
+
+  - name: OpenAi
+    type: select
+    icon: ${getIconForGroup("OpenAi")}
+    proxies:
+      - 故障转移      # <--- ✅ 优化：ChatGPT 优先用故障转移
+      - 节点选择
+      - 自动选择
+${countrySubGroups}
+      - 手动切换
+
   - name: 油管视频
     type: select
     icon: ${getIconForGroup("油管视频")}
     proxies:
       - 节点选择
       - 自动选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
       - DIRECT
+
   - name: 奈飞视频
     type: select
     icon: ${getIconForGroup("奈飞视频")}
     proxies:
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
       - DIRECT
+
   - name: 巴哈姆特
     type: select
     icon: ${getIconForGroup("巴哈姆特")}
     proxies:
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
       - DIRECT
+
   - name: 哔哩哔哩
     type: select
     icon: ${getIconForGroup("哔哩哔哩")}
     proxies:
       - 全球直连
 ${countrySubGroups}
+
   - name: 国外媒体
     type: select
     icon: ${getIconForGroup("国外媒体")}
     proxies:
       - 节点选择
+      - 故障转移
       - 自动选择
 ${countrySubGroups}
       - 手动切换
       - DIRECT
+
   - name: 国内媒体
     type: select
     icon: ${getIconForGroup("国内媒体")}
@@ -931,83 +945,102 @@ ${countrySubGroups}
       - DIRECT
 ${countrySubGroups}
       - 手动切换
+
   - name: 谷歌FCM
     type: select
     icon: ${getIconForGroup("谷歌FCM")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
+
   - name: 微软Bing
     type: select
     icon: ${getIconForGroup("微软Bing")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
+
   - name: 微软云盘
     type: select
     icon: ${getIconForGroup("微软云盘")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
+
   - name: 微软服务
     type: select
     icon: ${getIconForGroup("微软服务")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
       - 手动切换
+
   - name: 苹果服务
     type: select
     icon: ${getIconForGroup("苹果服务")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
+
   - name: 游戏平台
     type: select
     icon: ${getIconForGroup("游戏平台")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
 ${countrySubGroups}
       - 手动切换
+
   - name: 网易音乐
     type: select
     icon: ${getIconForGroup("网易音乐")}
     proxies:
       - DIRECT
       - 节点选择
+
   - name: 全球直连
     type: select
     icon: ${getIconForGroup("全球直连")}
     proxies:
       - DIRECT
       - 节点选择
+      - 故障转移
       - 自动选择
+
   - name: 全球拦截
     type: select
     icon: ${getIconForGroup("全球拦截")}
     proxies:
       - REJECT
       - DIRECT
+
   - name: 应用净化
     type: select
     icon: ${getIconForGroup("应用净化")}
     proxies:
       - REJECT
       - DIRECT
+
   - name: 漏网之鱼
     type: select
     icon: ${getIconForGroup("漏网之鱼")}
     proxies:
       - 节点选择
+      - 故障转移
       - 全球直连
       - 自动选择
 ${countrySubGroups}
@@ -1015,7 +1048,6 @@ ${countrySubGroups}
 ${countryGroupYaml}
 `;
 
-    // 动态生成其他规则组 (非国家类)
     const groupMap = {};
     activeRules.forEach(r => {
         if (!hardcodedGroups.includes(r.group)) {
@@ -1031,7 +1063,6 @@ ${countryGroupYaml}
     y += `\nrules:\n`;
     activeRules.forEach(r => {
         let target = r.group;
-        // 简单映射逻辑...
         if (['Cloudflare', 'LocalAreaNetwork', 'ChinaIP', 'ChinaDomain', 'UnBan'].includes(r.group)) target = 'DIRECT';
         else if (['BanAD', 'BanProgramAD'].includes(r.group)) target = 'REJECT';
         else if (r.group === 'GoogleCN') target = 'Google';
@@ -1054,6 +1085,99 @@ ${countryGroupYaml}
     return y;
 }
 
+// ----------------------------------------------------------------------------------
+//   Clash -> V2Ray 反向解析核心逻辑 (修复版)
+// ----------------------------------------------------------------------------------
+
+function parseClashLine(line) {
+    try {
+        const getKey = (key) => {
+            const regex = new RegExp(`${key}:\\s*([^,}]+)`);
+            const match = line.match(regex);
+            return match ? match[1].replace(/['"]/g, '').trim() : null;
+        };
+        const getWsPath = () => {
+            const match = line.match(/path:\s*['"]?([^'",}]+)['"]?/);
+            return match ? match[1] : null;
+        };
+        const getWsHost = () => {
+            const match = line.match(/headers:\s*\{.*?Host:\s*['"]?([^'",}]+)['"]?/i);
+            return match ? match[1] : null;
+        };
+
+        const type = getKey('type');
+        const name = getKey('name');
+        const server = getKey('server');
+        const port = getKey('port');
+        const uuid = getKey('uuid') || getKey('password');
+        const network = getKey('network') || 'tcp';
+        const sni = getKey('sni');
+        const tls = line.includes('tls: true') || type === 'trojan';
+
+        if (!server || !port) return null;
+
+        let link = "";
+        
+        if (type === 'vmess') {
+            const alterId = getKey('alterId') || 0;
+            const wsPath = getWsPath() || '/';
+            const wsHost = getWsHost() || sni || server;
+            
+            const config = {
+                v: "2", ps: name, add: server, port: parseInt(port), id: uuid,
+                aid: alterId, scy: "auto", net: network, type: "none",
+                host: network === 'ws' ? wsHost : "",
+                path: network === 'ws' ? wsPath : "",
+                tls: tls ? "tls" : ""
+            };
+            link = "vmess://" + Base64.encode(JSON.stringify(config));
+        } else if (type === 'vless' || type === 'trojan') {
+            let params = [];
+            params.push(`type=${network}`);
+            if (tls) params.push(`security=tls`);
+            if (sni) params.push(`sni=${sni}`);
+            if (network === 'ws') {
+                const wsPath = getWsPath();
+                const wsHost = getWsHost() || sni;
+                if (wsPath) params.push(`path=${encodeURIComponent(wsPath)}`);
+                if (wsHost) params.push(`host=${wsHost}`);
+            }
+            link = `${type}://${uuid}@${server}:${port}?${params.join('&')}#${encodeURIComponent(name)}`;
+        }
+
+        if (link) {
+            return {
+                type: type, link: link, name: name, server: server, port: port, secret: uuid,
+                config: type === 'vmess' ? {} : new URL(link)
+            };
+        }
+    } catch (e) { console.error("解析行失败:", e); return null; }
+}
+
+function clashToLinks(yamlContent) {
+    const lines = yamlContent.split('\n');
+    let inProxies = false;
+    let convertedNodes = [];
+
+    for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith('proxies:')) { inProxies = true; continue; }
+        if (inProxies && (line.startsWith('proxy-groups:') || line.startsWith('rules:'))) break;
+        if (inProxies && line.startsWith('-')) {
+            const node = parseClashLine(line);
+            if (node) convertedNodes.push(node);
+        }
+    }
+
+    if (convertedNodes.length === 0) return showToast("⚠️ 未识别到有效节点，请检查格式", "#f87171");
+
+    generatedNodes = convertedNodes;
+    currentTab = 'raw';
+    updateTabsUI('raw');
+    updateOutput();
+    showToast(`✅ 成功转换 ${convertedNodes.length} 个节点`, "#4ade80");
+}
+
 function updateOutput() {
     const area = document.getElementById('outputArea');
     if (generatedNodes.length === 0) return;
@@ -1065,9 +1189,8 @@ function updateOutput() {
 
 function switchTab(tab) { currentTab = tab; updateTabsUI(tab); updateOutput(); }
 function updateTabsUI(tab) { document.querySelectorAll('.tab').forEach((t, i) => { t.classList.remove('active'); if ((tab==='raw'&&i===0)||(tab==='b64'&&i===1)||(tab==='clash'&&i===2)) t.classList.add('active'); }); }
-function independentTransform() { const c = document.getElementById('outputArea').value.trim(); if(!c)return showToast("⚠️ 内容为空","#f87171"); if(c.startsWith('proxies:')) clashToLinks(c); else linksToClash(c); }
+function independentTransform() { const c = document.getElementById('outputArea').value.trim(); if(!c)return showToast("⚠️ 内容为空","#f87171"); if(c.startsWith('port:') || c.includes('proxies:')) clashToLinks(c); else linksToClash(c); }
 function linksToClash(t) { generatedNodes = t.split('\n').filter(l=>l.includes('://')).map(l=>parseNode(l.trim())).filter(n=>n); currentTab='clash'; updateTabsUI('clash'); updateOutput(); showToast(`✅ 转换 ${generatedNodes.length} 个`,"#4ade80"); }
-function clashToLinks(t) { showToast("⚠️ 请直接粘贴链接列表转换", "#fcd34d"); }
 function cleanAndExtract() { const r = document.getElementById('ipList').value; const s = new Set(); r.split(/[\r\n]+/).forEach(l=>{const i=l.match(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}/);if(i)s.add(i[0])}); document.getElementById('ipList').value=Array.from(s).join('\n'); showToast(`✅ 提取 ${s.size} IP`,"#4ade80"); }
 function showToast(m,c) { const e=document.getElementById('status-toast'); e.innerText=m; e.style.color=c; e.style.opacity=1; setTimeout(()=>e.style.opacity=0,3000); }
 function copyResult() { document.getElementById('outputArea').select(); document.execCommand('copy'); showToast("📋 已复制","#4ade80"); }
