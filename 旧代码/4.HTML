@@ -428,10 +428,13 @@ function updateRuleUrl() {
 }
 
 let activeRules = [
+    { name: "LS_Direct", group: "全球直连", url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt", type: "domain", format: "yaml" },
+    { name: "LS_NonCN", group: "节点选择", url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/tld-not-cn.txt", type: "domain", format: "yaml" },
+    { name: "LS_Proxy", group: "节点选择", url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/proxy.txt", type: "domain", format: "yaml" },
     { name: "Lan", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list", type: "classical", format: "text" },
     { name: "UnBan", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/UnBan.list", type: "classical", format: "text" },
+    { name: "LS_Reject", group: "应用净化", url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/reject.txt", type: "domain", format: "yaml" },
     { name: "Advertising", group: "应用净化", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list", type: "classical", format: "text" },
-    { name: "Privacy", group: "应用净化", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list", type: "classical", format: "text" },
     { name: "GoogleFCM", group: "谷歌FCM", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list", type: "classical", format: "text" },
     { name: "Google", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Google.list", type: "classical", format: "text" },
     { name: "Bing", group: "微软Bing", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bing.list", type: "classical", format: "text" },
@@ -449,11 +452,8 @@ let activeRules = [
     { name: "Netflix", group: "奈飞视频", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Netflix.list", type: "classical", format: "text" },
     { name: "ProxyMedia", group: "国外媒体", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list", type: "classical", format: "text" },
     { name: "ProxyGFWlist", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list", type: "classical", format: "text" },
-    { name: "ProxyLite", group: "节点选择", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ProxyLite.list", type: "classical", format: "text" },
     { name: "ChinaMedia", group: "国内媒体", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list", type: "classical", format: "text" },
-    { name: "ChinaDomain", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list", type: "classical", format: "text" },
     { name: "ChinaCompanyIp", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list", type: "classical", format: "text" },
-    { name: "ChinaIp", group: "全球直连", url: "https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaIp.list", type: "classical", format: "text" }
 ];
 
 let generatedNodes = [];
@@ -632,52 +632,69 @@ function getIconForGroup(name) {
     }
 
     const mapping = [
+        // --- 1. 最具体的关键词（长词/特定服务）放在最前面，防止被截胡 ---
+        { key: "微软云盘", icon: Verge + "onedrive.svg" },
+        { key: "OneDrive", icon: Verge + "onedrive.svg" },
+        { key: "微软Bing", icon: Orz3 + "Bing.png" },
+        { key: "Bing", icon: Orz3 + "Bing.png" },
+        { key: "谷歌FCM", icon: Orz3 + "Google.png" },
+        { key: "FCM", icon: Orz3 + "Google.png" },
+        { key: "网易音乐", icon: Koolson + "Netease_Music.png" },
+        { key: "Netease", icon: Koolson + "Netease_Music.png" },
+        { key: "国外媒体", icon: Orz3 + "Global.png" },
+        { key: "国内媒体", icon: Koolson + "Media.png" },
+        { key: "全球直连", icon: Verge + "link.svg" },
+        { key: "全球拦截", icon: Verge + "block.svg" },
+
+        // --- 2. 专项媒体与服务 ---
         { key: "OpenAi", icon: Orz3 + "OpenAI.png" },
         { key: "ChatGPT", icon: Orz3 + "OpenAI.png" },
-        { key: "Telegram", icon: Orz3 + "Telegram.png" },
-        { key: "电报", icon: Orz3 + "Telegram.png" },
-        { key: "Google", icon: Orz3 + "Google.png" },
-        { key: "谷歌", icon: Orz3 + "Google.png" },
         { key: "YouTube", icon: Orz3 + "YouTube.png" },
         { key: "油管", icon: Orz3 + "YouTube.png" },
         { key: "Netflix", icon: Orz3 + "Netflix.png" },
         { key: "奈飞", icon: Orz3 + "Netflix.png" },
-        { key: "Microsoft", icon: Orz3 + "Microsoft.png" },
-        { key: "微软", icon: Orz3 + "Microsoft.png" },
-        { key: "Apple", icon: Orz3 + "Apple.png" },
-        { key: "苹果", icon: Orz3 + "Apple.png" },
-        { key: "Steam", icon: Orz3 + "Steam.png" },
-        { key: "游戏", icon: Orz3 + "Steam.png" },
         { key: "Bilibili", icon: Xiaolin + "bilibili.svg" }, 
         { key: "哔哩哔哩", icon: Xiaolin + "bilibili.svg" },
         { key: "Bahamut", icon: Xiaolin + "Bahamut.svg" },
         { key: "巴哈姆特", icon: Xiaolin + "Bahamut.svg" },
         { key: "Spotify", icon: Orz3 + "Spotify.png" },
+        { key: "Telegram", icon: Orz3 + "Telegram.png" },
+        { key: "电报", icon: Orz3 + "Telegram.png" },
+        { key: "Steam", icon: Orz3 + "Steam.png" },
+        { key: "游戏", icon: Orz3 + "Steam.png" },
         { key: "Discord", icon: Orz3 + "Discord.png" },
         { key: "Twitter", icon: Orz3 + "Twitter.png" },
+
+        // --- 3. 通用厂商关键词（放在具体服务后面） ---
+        { key: "Microsoft", icon: Orz3 + "Microsoft.png" },
+        { key: "微软", icon: Orz3 + "Microsoft.png" },
+        { key: "Google", icon: Orz3 + "Google.png" },
+        { key: "谷歌", icon: Orz3 + "Google.png" },
+        { key: "Apple", icon: Orz3 + "Apple.png" },
+        { key: "苹果", icon: Orz3 + "Apple.png" },
+
+        // --- 4. 功能性策略组 ---
+        { key: "节点选择", icon: Koolson + "Proxy.png" },
+        { key: "手动切换", icon: Orz3 + "Static.png" },
+        { key: "自动", icon: Orz3 + "Urltest.png" },
+        { key: "Auto", icon: Orz3 + "Urltest.png" },
+        { key: "故障转移", icon: Orz3 + "Final.png" },
+        { key: "漏网之鱼", icon: Orz3 + "Final.png" },
+        { key: "Match", icon: Orz3 + "Final.png" },
+        { key: "Select", icon: Orz3 + "Static.png" },
+        { key: "应用净化", icon: Koolson + "Advertising.png" },
         { key: "ChinaIP", icon: Orz3 + "China.png" },
         { key: "China", icon: Orz3 + "China.png" },
         { key: "Global", icon: Orz3 + "Global.png" },
         { key: "国外", icon: Orz3 + "Global.png" },
-        { key: "Netease", icon: Koolson + "Netease_Music.png" }, 
-        { key: "网易音乐", icon: Koolson + "Netease_Music.png" },
-        { key: "全球直连", icon: Verge + "link.svg" }, 
-        { key: "全球拦截", icon: Verge + "block.svg" }, 
-        { key: "应用净化", icon: Koolson + "Advertising.png" },
-        { key: "国内媒体", icon: Koolson + "Media.png" },
-        { key: "漏网之鱼", icon: Orz3 + "Final.png" },
-        { key: "Match", icon: Orz3 + "Final.png" },
-        { key: "Auto", icon: Orz3 + "Urltest.png" },
-        { key: "自动", icon: Orz3 + "Urltest.png" },
-        { key: "Select", icon: Orz3 + "Static.png" },
-        { key: "节点选择", icon: Koolson + "Proxy.png" },
-        { key: "手动切换", icon: Orz3 + "Static.png" },
+        { key: "Cloudflare", icon: Orz3 + "Cloudflare.png" },
+
+        // --- 5. 兜底基础动作 ---
         { key: "Reject", icon: Orz3 + "Reject.png" },
         { key: "拦截", icon: Orz3 + "Reject.png" },
         { key: "净化", icon: Orz3 + "Reject.png" },
         { key: "Direct", icon: Orz3 + "Direct.png" },
-        { key: "直连", icon: Orz3 + "Direct.png" },
-        { key: "Cloudflare", icon: Orz3 + "Cloudflare.png" }
+        { key: "直连", icon: Orz3 + "Direct.png" }
     ];
 
     for (let item of mapping) {
@@ -1082,8 +1099,7 @@ ${countryGroupYaml}
         
         y += `  - RULE-SET,${r.name},${target}\n`;
     });
-    
-    y += `  - DOMAIN-SUFFIX,browserleaks.com,节点选择\n  - GEOSITE,cn,DIRECT\n  - GEOIP,CN,DIRECT\n  - DOMAIN-SUFFIX,cn,DIRECT\n  - MATCH,漏网之鱼\n`;
+    y += `  - DOMAIN-SUFFIX,googleapis.cn,节点选择\n  - DOMAIN-SUFFIX,gstatic.com,节点选择\n  - DOMAIN-SUFFIX,xn--ngstr-lra8j.com,节点选择\n  - DOMAIN-SUFFIX,github.io,节点选择\n  - DOMAIN,v2rayse.com,节点选择\n  - GEOSITE,cn,DIRECT\n  - GEOIP,CN,DIRECT\n  - DOMAIN-SUFFIX,cn,DIRECT\n  - MATCH,漏网之鱼\n`;
     return y;
 }
 
