@@ -831,7 +831,7 @@ proxies:
     type: fallback
     icon: ${getIconForGroup(groupName)}
     url: http://www.gstatic.com/generate_204
-    interval: 300
+    interval: 80000
     proxies:
 ${proxies.join('\n')}\n`;
 
@@ -868,7 +868,7 @@ ${countrySubGroups}
     type: url-test
     icon: ${getIconForGroup("自动选择")}
     url: http://www.gstatic.com/generate_204
-    interval: 300
+    interval: 80000
     tolerance: 50
     proxies:
 ${allNames}
@@ -877,7 +877,7 @@ ${allNames}
     type: fallback    # <--- ✅ 新增：全局故障转移策略
     icon: https://fastly.jsdelivr.net/gh/Orz-3/mini@master/Color/Final.png
     url: http://www.gstatic.com/generate_204
-    interval: 300
+    interval: 80000
     proxies:
 ${allNames}
 
