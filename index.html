@@ -1080,32 +1080,46 @@ ${countryGroupYaml}
     });
 
     y += `\nrules:\n`;
+    const processedRules = new Set();
 
     // ========== 优先级 1: 局域网与拦截 (最快匹配) ==========
     y += `  - RULE-SET,Lan,全球直连\n`;
     y += `  - RULE-SET,LS_Reject,应用净化\n`;
     y += `  - RULE-SET,Advertising,应用净化\n`;
+    processedRules.add('Lan'); processedRules.add('LS_Reject'); processedRules.add('Advertising');
 
-    // ========== 优先级 2: 核心代理域名 (解决 Gemini/Google 加载不全问题) ==========
-    // 强制将这些域名在任何大型规则集之前送入代理，防止被 LS_Direct 误伤
-    y += `  - DOMAIN-SUFFIX,gemini.google.com,节点选择\n`;
-    y += `  - DOMAIN-KEYWORD,gemini,节点选择\n`;
+    // ========== 优先级 2: AI 服务硬分流 (强制美国/支持区域) ==========
+    // --- Claude ---
+    y += `  - DOMAIN-SUFFIX,claude.ai,OpenAi\n`;
+    y += `  - DOMAIN-SUFFIX,claude.com,OpenAi\n`;
+    y += `  - DOMAIN-SUFFIX,anthropic.com,OpenAi\n`;
+    
+    // --- Gemini (Google AI) ---
+    // 修正：将 Gemini 核心域名移入 OpenAi 组，确保不走香港
+    y += `  - DOMAIN-SUFFIX,gemini.google.com,OpenAi\n`;
+    y += `  - DOMAIN-SUFFIX,bard.google.com,OpenAi\n`;
+    y += `  - DOMAIN-KEYWORD,gemini,OpenAi\n`;
+    y += `  - DOMAIN-KEYWORD,alkaliminer,OpenAi\n`; // Gemini 的相关 API
+
+    // --- ChatGPT ---
+    y += `  - DOMAIN-SUFFIX,openai.com,OpenAi\n`;
+    y += `  - DOMAIN-SUFFIX,chatgpt.com,OpenAi\n`;
+
+    // ========== 优先级 3: 谷歌通用基础服务 (走普通代理组) ==========
+    // 这些域名是 Google 基础依赖，通常香港节点速度更快，所以放在 AI 组之后
     y += `  - DOMAIN-SUFFIX,gstatic.com,节点选择\n`;
     y += `  - DOMAIN-SUFFIX,googleapis.com,节点选择\n`;
     y += `  - DOMAIN-SUFFIX,googleusercontent.com,节点选择\n`;
-    y += `  - DOMAIN-SUFFIX,googleapis.cn,节点选择\n`;
-    y += `  - DOMAIN-SUFFIX,github.io,节点选择\n`;
 
-    // 用于记录哪些规则已经被处理过了，防止重复写入
-    const processedRules = new Set(['Lan', 'LS_Reject', 'Advertising']);
-
-    // ========== 优先级 3: 特定分组映射 (处理代理类规则集) ==========
+    // ========== 优先级 4: 特定服务规则集 (Rule-Set 模式) ==========
+    const specialNames = ['OpenAI', 'AI_Global', 'Telegram', 'YouTube', 'Netflix', 'Bilibili', 'Bahamut', 'Steam', 'NeteaseMusic', 'GoogleFCM', 'Bing', 'OneDrive', 'Microsoft', 'Apple', 'ProxyMedia', 'ChinaMedia'];
+    
     activeRules.forEach(r => {
         if (processedRules.has(r.name)) return;
-
-        let target = r.group;
-        // 自动映射逻辑：将规则集中的 group/name 映射到您 YAML 中的策略组名称
-        if (r.name === 'OpenAI' || r.group === 'OpenAi') target = 'OpenAi';
+        
+        let target = null;
+        // 确保 AI 相关规则集全部指向 OpenAi 组
+        if (r.name === 'OpenAI' || r.name === 'AI_Global' || r.group === 'OpenAi') target = 'OpenAi';
         else if (r.name === 'Telegram') target = '电报消息';
         else if (r.name === 'YouTube') target = '油管视频';
         else if (r.name === 'Netflix') target = '奈飞视频';
@@ -1120,15 +1134,23 @@ ${countryGroupYaml}
         else if (r.group === '谷歌FCM' || r.name === 'GoogleFCM') target = '谷歌FCM';
         else if (r.group === '国外媒体' || r.name === 'ProxyMedia') target = '国外媒体';
         else if (r.group === '国内媒体' || r.name === 'ChinaMedia') target = '国内媒体';
-        
-        // 核心修正：如果是代理类规则集或特定服务类，优先写入
-        if (['LS_Proxy', 'ProxyGFWlist', 'LS_NonCN'].includes(r.name) || (target !== '全球直连' && target !== 'DIRECT')) {
+
+        if (target && target !== '全球直连') {
             y += `  - RULE-SET,${r.name},${target}\n`;
             processedRules.add(r.name);
         }
     });
 
-    // ========== 优先级 4: 直连类规则集 (必须排在代理之后) ==========
+    // ========== 优先级 5: 通用代理兜底 (LS_Proxy) ==========
+    activeRules.forEach(r => {
+        if (processedRules.has(r.name)) return;
+        if (['LS_Proxy', 'ProxyGFWlist', 'LS_NonCN'].includes(r.name)) {
+            y += `  - RULE-SET,${r.name},节点选择\n`;
+            processedRules.add(r.name);
+        }
+    });
+
+    // ========== 优先级 6: 直连规则与最后兜底 ==========
     activeRules.forEach(r => {
         if (processedRules.has(r.name)) return;
         if (['LS_Direct', 'UnBan', 'ChinaCompanyIp'].includes(r.name) || r.group === '全球直连') {
@@ -1137,14 +1159,6 @@ ${countryGroupYaml}
         }
     });
 
-    // ========== 优先级 5: 兜底处理 (防止外部加载的新规则丢失) ==========
-    activeRules.forEach(r => {
-        if (!processedRules.has(r.name)) {
-            y += `  - RULE-SET,${r.name},节点选择\n`; // 没被分类的规则默认走代理，最保险
-        }
-    });
-
-    // ========== 优先级 6: 最终兜底规则 (GeoIP/GeoSite) ==========
     y += `  - GEOSITE,cn,DIRECT\n`;
     y += `  - GEOIP,CN,DIRECT\n`;
     y += `  - DOMAIN-SUFFIX,cn,DIRECT\n`;
